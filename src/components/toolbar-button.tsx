@@ -29,7 +29,7 @@ export function ToolbarButton({
 }: ToolbarButtonProps) {
   const [hovered, setHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
 

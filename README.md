@@ -13,15 +13,20 @@
 
 ## Features
 
-- **Smart Element Inspector** — hover to highlight any DOM element with selector + dimensions tooltip, click to annotate
-- **Feedback Annotations** — numbered step markers pinned to elements, surviving scroll and resize
-- **Floating Toolbar** — collapsible pill UI with start/stop, feedback list, copy, delete, settings, and close actions
+- **Smart Element Inspector** — hover to highlight any DOM element with selector + dimensions tooltip, click to annotate. Captures rich metadata: accessibility attributes, computed styles, DOM paths, and nearby elements
+- **Feedback Annotations** — numbered step markers pinned to elements, surviving scroll and resize. Click a marker to edit its text in-place
+- **Floating Toolbar** — collapsible pill UI with start/stop, feedback list, copy, delete, settings, and close actions. Shows a badge count when collapsed
+- **Settings Panel** — toggle dark/light theme, switch output mode (detailed or debug), and pick marker accent color from 6 presets. Settings persist across sessions
+- **Feedback List** — scrollable popup listing all feedbacks with per-item copy button
+- **Keyboard Shortcuts** — `⌘⇧F` toolbar, `⌘⇧I` inspector, `⌘⇧C` copy, `⌘⇧L` list, `⌘⇧,` settings, `⌘⇧⌫` delete all, `⌘Z` undo, `[`/`]` navigate markers, `Enter` edit
+- **Two Output Modes** — `detailed` (compact markdown) or `debug` (full markdown with environment, DOM path, computed styles, annotation position)
+- **Undo Delete** — restore the last deleted feedback with `⌘Z`
 - **Dark & Light Themes** — built-in theme support, zero CSS required (all styles are inline)
 - **Fully Typed** — written in TypeScript with exported types for every prop and callback
 - **Tiny Footprint** — ~14 kB minified, zero runtime dependencies (only `react`, `react-dom`, and `lucide-react` as peer deps)
 - **Portal-Based** — renders via `createPortal` so it never conflicts with your app's layout or z-index
-- **Keyboard Accessible** — roving tabindex, arrow key navigation, Escape to close
 - **Persistent Feedbacks** — opt-in `localStorage` persistence so feedbacks survive page reload, with orphan detection for missing elements
+- **SPA Aware** — auto-resets inspector and popups on route changes
 
 ## Install
 
@@ -71,6 +76,7 @@ The toolbar appears as a collapsed floating button (bottom-right by default). Cl
 | `onInspect` | `(element: InspectedElement) => void` | Element selected via inspector |
 | `onFeedbackSubmit` | `(feedback: FeedbackItem) => void` | Feedback annotation submitted |
 | `onFeedbackDelete` | `(feedbackId: string) => void` | Feedback marker deleted |
+| `onFeedbackUpdate` | `(feedbackId: string, content: string) => void` | Feedback text edited |
 | `onFeedback` | `() => void` | "Feedbacks" toolbar button clicked |
 | `onCopy` | `() => void` | "Copy" toolbar button clicked |
 | `onDelete` | `() => void` | "Delete All" toolbar button clicked |
@@ -79,34 +85,56 @@ The toolbar appears as a collapsed floating button (bottom-right by default). Cl
 ## Types
 
 ```ts
+interface ElementAccessibility {
+  role?: string
+  label?: string
+  description?: string
+}
+
+interface ElementMetadata {
+  accessibility: ElementAccessibility
+  boundingBox: { x: number; y: number; width: number; height: number }
+  computedStyles: Record<string, string>
+  cssClasses: string[]
+  elementDescription: string   // e.g. `paragraph: "Some text..."`
+  elementPath: string          // short class-based CSS path
+  fullPath: string             // full tag+class CSS path
+  isFixed: boolean
+  nearbyElements: string
+  nearbyText: string
+}
+
 interface InspectedElement {
   element: HTMLElement
   tagName: string
   className: string
   id: string
-  selector: string        // generated CSS selector
+  selector: string             // generated CSS selector
   rect: DOMRect
   dimensions: { width: number; height: number }
+  metadata: ElementMetadata    // rich element metadata
 }
 
 interface FeedbackItem {
   id: string
-  stepNumber: number      // 1-based
-  content: string         // user-entered text
-  selector: string        // CSS selector of target element
-  offsetX: number         // offset from element's top-left
+  stepNumber: number           // 1-based
+  content: string              // user-entered text
+  selector: string             // CSS selector of target element
+  offsetX: number              // offset from element's top-left
   offsetY: number
+  pageX: number                // absolute page X coordinate
+  pageY: number                // absolute page Y coordinate
   targetElement: HTMLElement | null
   element: InspectedElement | null
-  createdAt: number       // timestamp
-  orphan?: boolean        // true when element not found after reload
+  createdAt: number            // timestamp
+  orphan?: boolean             // true when element not found after reload
 }
 
 type ToolbarPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 type ToolbarTheme = 'dark' | 'light'
 ```
 
-All types are exported from the package entry point.
+All types are exported from the package entry point, including `ElementMetadata`, `ElementAccessibility`, and `SerializedFeedbackItem`.
 
 ## How It Works
 
@@ -117,6 +145,23 @@ All types are exported from the package entry point.
 5. A **numbered marker** appears pinned to that element — it follows scroll and resize
 6. Hover a marker to preview the note, click it to delete
 7. **Stop** the inspector or **Close** the toolbar when done
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `⌘⇧F` | Toggle toolbar |
+| `⌘⇧I` | Toggle inspector |
+| `⌘⇧C` | Copy all feedbacks |
+| `⌘⇧L` | Open feedback list |
+| `⌘⇧,` | Open settings |
+| `⌘⇧⌫` | Delete all feedbacks |
+| `⌘Z` | Undo last delete |
+| `[` / `]` | Navigate between markers |
+| `Enter` | Edit focused marker |
+| `Escape` | Close popups → stop inspector → deselect marker → collapse toolbar |
+
+> On Windows/Linux, use `Ctrl` instead of `⌘`.
 
 ## Examples
 

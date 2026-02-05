@@ -957,6 +957,86 @@
     }
 
     /* ========================================
+       Keyboard Shortcuts
+       ======================================== */
+    .shortcuts-section {
+      padding: 100px 0;
+    }
+
+    .shortcuts-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .shortcuts-header .section-desc {
+      margin: 0 auto;
+    }
+
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .shortcut-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 12px;
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius);
+      transition: border-color var(--transition), transform var(--transition);
+    }
+
+    .shortcut-item:hover {
+      border-color: var(--slate-600);
+      transform: translateY(-2px);
+    }
+
+    .shortcut-item kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      padding: 4px 10px;
+      background: var(--slate-700);
+      border: 1px solid var(--slate-600);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue-400);
+    }
+
+    .shortcut-item span {
+      font-size: 12px;
+      color: var(--slate-400);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .shortcuts-note {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--slate-600);
+    }
+
+    .shortcuts-note kbd {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 6px;
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: 4px;
+      color: var(--slate-400);
+    }
+
+    /* ========================================
        Footer
        ======================================== */
     .footer {
@@ -1045,6 +1125,10 @@
         grid-template-columns: 1fr;
         gap: 32px;
       }
+
+      .shortcuts-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
     }
 
     @media (max-width: 640px) {
@@ -1108,6 +1192,10 @@
       .demo-card-row {
         flex-direction: column;
       }
+
+      .shortcuts-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
@@ -1157,7 +1245,7 @@
 
       <h1>Visual UI <span class="accent">Feedback</span> for React</h1>
       <p class="hero-sub">Drop a floating toolbar into your React app. Inspect elements, annotate your UI, and collect
-        structured feedback — in seconds.</p>
+        structured feedback — with keyboard shortcuts, rich metadata, and zero config.</p>
 
       <div class="hero-actions">
         <a href="#get-started" class="btn-primary">
@@ -1332,27 +1420,40 @@
               your layout.</p>
           </div>
 
-          <!-- Card 4: Themes -->
+          <!-- Card 4: Keyboard Shortcuts -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <!-- keyboard icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                <line x1="6" y1="8" x2="6.01" y2="8" />
+                <line x1="10" y1="8" x2="10.01" y2="8" />
+                <line x1="14" y1="8" x2="14.01" y2="8" />
+                <line x1="18" y1="8" x2="18.01" y2="8" />
+                <line x1="6" y1="12" x2="6.01" y2="12" />
+                <line x1="18" y1="12" x2="18.01" y2="12" />
+                <line x1="8" y1="16" x2="16" y2="16" />
+              </svg>
+            </div>
+            <h3>Keyboard Shortcuts</h3>
+            <p>Full shortcut system — toggle, inspect, copy, navigate markers, undo delete. All from your keyboard.</p>
+          </div>
+
+          <!-- Card 5: Settings Panel -->
           <div class="bento-card fade-in">
             <div class="bento-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
               </svg>
             </div>
-            <h3>Dark & Light</h3>
-            <p>Built-in theme support. All styles are inline — zero CSS imports required.</p>
+            <h3>Settings Panel</h3>
+            <p>Toggle theme, choose output mode (detailed or debug), pick marker colors. Settings persist across sessions.</p>
           </div>
 
-          <!-- Card 5: Zero Config -->
+          <!-- Card 6: Zero Config -->
           <div class="bento-card fade-in">
             <div class="bento-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1361,20 +1462,7 @@
               </svg>
             </div>
             <h3>Zero Config</h3>
-            <p>One component, no providers. Optional localStorage persistence with orphan detection.</p>
-          </div>
-
-          <!-- Card 6: Tiny & Typed -->
-          <div class="bento-card fade-in">
-            <div class="bento-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
-              </svg>
-            </div>
-            <h3>Tiny & Typed</h3>
-            <p>~14 kB minified. Full TypeScript types exported. Tree-shakeable ESM + CJS builds.</p>
+            <p>One component, no providers. ~14 kB minified, fully typed. Tree-shakeable ESM + CJS builds.</p>
           </div>
         </div>
       </div>
@@ -1539,6 +1627,11 @@
                   <td>Feedback marker deleted</td>
                 </tr>
                 <tr>
+                  <td><span class="prop-name">onFeedbackUpdate</span></td>
+                  <td><span class="prop-type">(feedbackId: string, content: string) =&gt; void</span></td>
+                  <td>Feedback text edited</td>
+                </tr>
+                <tr>
                   <td><span class="prop-name">onCopy</span></td>
                   <td><span class="prop-type">() =&gt; void</span></td>
                   <td>"Copy" toolbar button clicked</td>
@@ -1548,10 +1641,78 @@
                   <td><span class="prop-type">() =&gt; void</span></td>
                   <td>"Delete All" toolbar button clicked</td>
                 </tr>
+                <tr>
+                  <td><span class="prop-name">onFeedback</span></td>
+                  <td><span class="prop-type">() =&gt; void</span></td>
+                  <td>"Feedbacks" toolbar button clicked</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onSettings</span></td>
+                  <td><span class="prop-type">() =&gt; void</span></td>
+                  <td>"Settings" toolbar button clicked</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         Keyboard Shortcuts
+         ======================================== -->
+    <section class="shortcuts-section" id="shortcuts">
+      <div class="container">
+        <div class="shortcuts-header fade-in">
+          <p class="section-label">Shortcuts</p>
+          <h2 class="section-title">Keyboard-first workflow</h2>
+          <p class="section-desc">Every action has a shortcut. Navigate markers, toggle inspector, copy feedbacks, undo deletes — without touching the mouse.</p>
+        </div>
+
+        <div class="shortcuts-grid fade-in">
+          <div class="shortcut-item">
+            <kbd>⌘⇧F</kbd>
+            <span>Toggle toolbar</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘⇧I</kbd>
+            <span>Toggle inspector</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘⇧C</kbd>
+            <span>Copy all feedbacks</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘⇧L</kbd>
+            <span>Open feedback list</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘⇧,</kbd>
+            <span>Open settings</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘⇧⌫</kbd>
+            <span>Delete all</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>⌘Z</kbd>
+            <span>Undo delete</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>[ ]</kbd>
+            <span>Navigate markers</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Enter</kbd>
+            <span>Edit focused marker</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Esc</kbd>
+            <span>Close / dismiss</span>
+          </div>
+        </div>
+
+        <p class="shortcuts-note fade-in">On Windows/Linux, use <kbd>Ctrl</kbd> instead of <kbd>⌘</kbd></p>
       </div>
     </section>
   </main>

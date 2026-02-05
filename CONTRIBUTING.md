@@ -26,10 +26,18 @@ src/
 │   ├── smart-inspector-overlay.tsx   # hover highlight + tooltip
 │   ├── feedback-popover.tsx          # annotation input form
 │   ├── feedback-markers.tsx          # numbered step markers
+│   ├── feedback-list-popup.tsx       # feedback list panel
+│   ├── settings-popup.tsx            # settings panel
 │   └── index.ts
-└── hooks/
-    ├── use-smart-inspector.ts        # DOM inspection logic
-    └── use-feedback-store.ts         # feedback state management
+├── hooks/
+│   ├── use-smart-inspector.ts        # DOM inspection logic
+│   ├── use-feedback-store.ts         # feedback state management
+│   ├── use-settings-store.ts         # settings persistence
+│   ├── use-keyboard-shortcuts.ts     # global keyboard shortcuts
+│   └── use-pathname.ts               # SPA pathname tracking
+└── utils/
+    ├── feedback-persistence.ts       # localStorage serialization
+    └── format-feedbacks.ts           # output formatters (detailed/debug)
 ```
 
 ## Guidelines
