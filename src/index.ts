@@ -3,6 +3,7 @@ export type {
   ProUIFeedbacksProps,
   InspectedElement,
   FeedbackItem,
+  SerializedFeedbackItem,
   ToolbarPosition,
   ToolbarTheme,
 } from './types'

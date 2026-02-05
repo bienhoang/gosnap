@@ -28,11 +28,27 @@ export interface FeedbackItem {
   /** Offset from target element's top-left corner */
   offsetX: number
   offsetY: number
-  /** The target DOM element reference */
-  targetElement: HTMLElement
-  /** Inspected element metadata at creation time */
-  element: InspectedElement
+  /** The target DOM element reference (null when orphaned after reload) */
+  targetElement: HTMLElement | null
+  /** Inspected element metadata at creation time (null when orphaned) */
+  element: InspectedElement | null
   createdAt: number
+  /** True when the target element could not be found after rehydration */
+  orphan?: boolean
+}
+
+/** JSON-serializable subset of FeedbackItem for localStorage persistence */
+export interface SerializedFeedbackItem {
+  id: string
+  stepNumber: number
+  content: string
+  selector: string
+  offsetX: number
+  offsetY: number
+  createdAt: number
+  tagName: string
+  className: string
+  elementId: string
 }
 
 export interface ProUIFeedbacksProps {
@@ -64,4 +80,6 @@ export interface ProUIFeedbacksProps {
   triggerIcon?: ReactNode
   /** Additional inline styles for the container */
   style?: CSSProperties
+  /** Enable localStorage persistence. `true` = per-page key, string = custom key */
+  persist?: boolean | string
 }
