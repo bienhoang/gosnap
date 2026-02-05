@@ -5,7 +5,7 @@ import type { OutputMode } from '../hooks/use-settings-store'
 import { MARKER_COLORS } from '../hooks/use-settings-store'
 
 const PKG_NAME = 'Pro UI Feedbacks'
-const PKG_VERSION = '0.2.0'
+const PKG_VERSION = '0.2.1'
 
 interface SettingsPopupProps {
   theme: ToolbarTheme

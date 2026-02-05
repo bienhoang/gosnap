@@ -1,7 +1,7 @@
 {
   "name": "pro-ui-feedbacks",
   "author": "Bien Hoang <me@bienhoang.xyz>",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Visual UI Feedback for React/Next.js apps",
   "type": "module",
   "main": "./dist/index.cjs",
