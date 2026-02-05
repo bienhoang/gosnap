@@ -92,6 +92,60 @@ export function formatDebug(feedbacks: FeedbackItem[]): string {
   return lines.join('\n')
 }
 
+/** Debug format for a single feedback item */
+export function formatDebugSingle(fb: FeedbackItem): string {
+  const env = getEnvironment()
+  const m = fb.element?.metadata
+  const bb = m?.boundingBox
+  const lines: string[] = []
+
+  lines.push(`## Page: ${window.location.pathname}`)
+  lines.push('')
+  lines.push('**Environment:**')
+  lines.push(`- Viewport: ${env.viewport}`)
+  lines.push(`- URL: ${env.url}`)
+  lines.push(`- Timestamp: ${env.timestamp}`)
+  lines.push(`- Device Pixel Ratio: ${env.dpr}`)
+  lines.push('')
+
+  const desc = m?.elementDescription ?? fb.selector
+  lines.push(`### ${fb.stepNumber}. ${desc}`)
+
+  if (m?.fullPath) lines.push(`**Full DOM Path:** ${m.fullPath}`)
+  if (bb) lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
+  if (bb && bb.width > 0) {
+    const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
+    const pxFromTop = Math.round(bb.y + fb.offsetY)
+    lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
+  }
+  if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
+    lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
+  }
+  if (m?.nearbyElements) lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
+  lines.push(`**Feedback:** ${fb.content}`)
+
+  return lines.join('\n')
+}
+
+/** Detailed format for a single feedback item */
+export function formatDetailedSingle(fb: FeedbackItem): string {
+  const m = fb.element?.metadata
+  const bb = m?.boundingBox
+  const lines: string[] = []
+
+  lines.push(`## Page: ${window.location.pathname}`)
+  lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
+  lines.push('')
+
+  const desc = m?.elementDescription ?? fb.selector
+  lines.push(`### ${fb.stepNumber}. ${desc}`)
+  if (m?.elementPath) lines.push(`**Location:** ${m.elementPath}`)
+  if (bb) lines.push(`**Position:** ${bb.x}px, ${bb.y}px (${bb.width}×${bb.height}px)`)
+  lines.push(`**Feedback:** ${fb.content}`)
+
+  return lines.join('\n')
+}
+
 /**
  * Detailed format — lighter markdown with viewport,
  * location (elementPath), position, feedback.

@@ -247,14 +247,16 @@ export function ProUIFeedbacks({
 
   const focusedMarkerId = focusedMarkerIndex !== null ? feedbacks[focusedMarkerIndex]?.id : undefined
 
+  const tooltipAbove = position.startsWith('bottom')
+
   // Build the pre-configured items
   const items = [
-    { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', onClick: handleToggle, active },
-    { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, onClick: handleFeedbackListToggle },
-    { id: 'copy', icon: <Copy size={ICON_SIZE} />, label: 'Copy', onClick: handleCopy },
-    { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', onClick: handleDeleteAll },
-    { id: 'settings', icon: <Settings size={ICON_SIZE} />, label: 'Settings', onClick: handleSettingsToggle },
-    { id: 'close', icon: <X size={ICON_SIZE} />, label: 'Close', onClick: handleClose },
+    { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', description: active ? 'Deactivate inspector' : 'Activate inspector', shortcut: '⌘⇧I', onClick: handleToggle, active },
+    { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, description: 'View feedback list', shortcut: '⌘⇧L', onClick: handleFeedbackListToggle },
+    { id: 'copy', icon: <Copy size={ICON_SIZE} />, label: 'Copy', description: 'Copy all to clipboard', shortcut: '⌘⇧C', onClick: handleCopy },
+    { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', description: 'Remove all feedbacks', shortcut: '⌘⇧⌫', onClick: handleDeleteAll },
+    { id: 'settings', icon: <Settings size={ICON_SIZE} />, label: 'Settings', description: 'Theme, output & colors', shortcut: '⌘⇧,', onClick: handleSettingsToggle },
+    { id: 'close', icon: <X size={ICON_SIZE} />, label: 'Close', description: 'Collapse toolbar', onClick: handleClose },
   ]
 
   // Keyboard navigation (roving tabindex)
@@ -356,10 +358,13 @@ export function ProUIFeedbacks({
               key={item.id}
               icon={item.icon}
               label={item.label}
+              description={item.description}
+              shortcut={item.shortcut}
               theme={theme}
               tabIndex={index === focusIndex ? 0 : -1}
               active={item.active}
               accentColor={accentColor}
+              tooltipAbove={tooltipAbove}
               onClick={item.onClick}
             />
           ))}
@@ -426,6 +431,7 @@ export function ProUIFeedbacks({
           feedbacks={feedbacks}
           theme={theme}
           accentColor={accentColor}
+          outputMode={settings.outputMode}
           onClose={() => setFeedbackListOpen(false)}
           toolbarRect={toolbarRect}
           zIndex={zIndex}

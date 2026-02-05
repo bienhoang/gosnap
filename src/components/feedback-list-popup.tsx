@@ -1,11 +1,13 @@
-import { useCallback } from 'react'
-import { MessageSquare } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { MessageSquare, Copy, Check } from 'lucide-react'
 import type { FeedbackItem, ToolbarTheme } from '../types'
+import { formatDebugSingle, formatDetailedSingle } from '../utils/format-feedbacks'
 
 interface FeedbackListPopupProps {
   feedbacks: FeedbackItem[]
   theme: ToolbarTheme
   accentColor: string
+  outputMode: 'detailed' | 'debug'
   onClose: () => void
   toolbarRect: DOMRect | null
   zIndex: number
@@ -15,6 +17,7 @@ export function FeedbackListPopup({
   feedbacks,
   theme,
   accentColor,
+  outputMode,
   onClose,
   toolbarRect,
   zIndex,
@@ -25,9 +28,19 @@ export function FeedbackListPopup({
   const border = isDark ? '#333333' : '#e5e5e5'
   const mutedText = isDark ? '#888888' : '#999999'
 
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose()
   }, [onClose])
+
+  const handleCopyFeedback = useCallback((fb: FeedbackItem) => {
+    const text = outputMode === 'debug' ? formatDebugSingle(fb) : formatDetailedSingle(fb)
+    navigator.clipboard.writeText(text).catch(() => { /* silent */ })
+    setCopiedId(fb.id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }, [outputMode])
 
   const popupStyle: React.CSSProperties = {
     position: 'fixed',
@@ -70,6 +83,7 @@ export function FeedbackListPopup({
     gap: 10,
     padding: '10px 14px',
     borderBottom: `1px solid ${border}`,
+    position: 'relative',
   }
 
   const numberStyle: React.CSSProperties = {
@@ -113,6 +127,24 @@ export function FeedbackListPopup({
     gap: 8,
   }
 
+  const copyBtnStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
+    padding: 0,
+    border: `1px solid ${border}`,
+    borderRadius: 6,
+    backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5',
+    color: mutedText,
+    cursor: 'pointer',
+    transition: 'color 150ms ease',
+  }
+
   return (
     <div
       data-smart-inspector="feedback-list-popup"
@@ -134,15 +166,34 @@ export function FeedbackListPopup({
           </div>
         ) : (
           <div style={listStyle}>
-            {feedbacks.map((fb, i) => (
-              <div key={fb.id} style={{ ...itemStyle, borderBottom: i === feedbacks.length - 1 ? 'none' : itemStyle.borderBottom }}>
-                <div style={numberStyle}>{fb.stepNumber}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={contentStyle}>{fb.content}</div>
-                  <div style={selectorStyle} title={fb.selector}>{fb.selector}</div>
+            {feedbacks.map((fb, i) => {
+              const isHovered = hoveredId === fb.id
+              const isCopied = copiedId === fb.id
+              return (
+                <div
+                  key={fb.id}
+                  style={{ ...itemStyle, borderBottom: i === feedbacks.length - 1 ? 'none' : itemStyle.borderBottom }}
+                  onMouseEnter={() => setHoveredId(fb.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  <div style={numberStyle}>{fb.stepNumber}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={contentStyle}>{fb.content}</div>
+                    <div style={selectorStyle} title={fb.selector}>{fb.selector}</div>
+                  </div>
+                  {(isHovered || isCopied) && (
+                    <button
+                      type="button"
+                      style={{ ...copyBtnStyle, color: isCopied ? '#22c55e' : mutedText }}
+                      onClick={() => handleCopyFeedback(fb)}
+                      title={isCopied ? 'Copied!' : 'Copy feedback'}
+                    >
+                      {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
