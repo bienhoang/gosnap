@@ -17,11 +17,12 @@ interface FeedbackPopoverProps {
   theme: ToolbarTheme
   zIndex: number
   stepNumber: number
+  accentColor?: string
   onSubmit: (content: string) => void
   onClose: () => void
 }
 
-export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNumber, onSubmit, onClose }: FeedbackPopoverProps) {
+export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNumber, accentColor, onSubmit, onClose }: FeedbackPopoverProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -81,7 +82,7 @@ export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNum
           </span>
           <button
             type="button"
-            style={getFeedbackSubmitStyle(theme, isEmpty)}
+            style={getFeedbackSubmitStyle(theme, isEmpty, accentColor)}
             onClick={handleSubmit}
             disabled={isEmpty}
           >

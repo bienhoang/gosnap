@@ -75,7 +75,7 @@ export function getTriggerButtonStyle(theme: ToolbarTheme): CSSProperties {
   }
 }
 
-export function getItemButtonStyle(theme: ToolbarTheme, active?: boolean, disabled?: boolean): CSSProperties {
+export function getItemButtonStyle(theme: ToolbarTheme, active?: boolean, disabled?: boolean, accentColor?: string): CSSProperties {
   const colors = THEME_MAP[theme]
   return {
     display: 'flex',
@@ -86,7 +86,7 @@ export function getItemButtonStyle(theme: ToolbarTheme, active?: boolean, disabl
     padding: 0,
     border: 'none',
     borderRadius: 8,
-    backgroundColor: active ? colors.activeBg : 'transparent',
+    backgroundColor: active ? (accentColor ?? colors.activeBg) : 'transparent',
     color: active ? '#ffffff' : colors.text,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.4 : 1,
@@ -122,19 +122,51 @@ export function getHoverBg(theme: ToolbarTheme): string {
   return THEME_MAP[theme].hover
 }
 
+export function getBadgeStyle(theme: ToolbarTheme, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 5px',
+    backgroundColor: accentColor,
+    color: '#ffffff',
+    borderRadius: 9,
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    lineHeight: 1,
+    border: `2px solid ${THEME_MAP[theme].bg}`,
+    boxSizing: 'border-box',
+    pointerEvents: 'none',
+  }
+}
+
 // --- Smart Inspector styles ---
 
-const INSPECTOR_COLOR = '#3b82f6'
+export const DEFAULT_ACCENT_COLOR = '#3b82f6'
 
-export function getInspectorHighlightStyle(rect: DOMRect): CSSProperties {
+/** Convert hex to rgba for translucent fills */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+export function getInspectorHighlightStyle(rect: DOMRect, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
   return {
     position: 'fixed',
     top: rect.top,
     left: rect.left,
     width: rect.width,
     height: rect.height,
-    border: `2px solid ${INSPECTOR_COLOR}`,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    border: `2px solid ${accentColor}`,
+    backgroundColor: hexToRgba(accentColor, 0.08),
     borderRadius: 2,
     pointerEvents: 'none',
     transition: 'all 50ms ease-out',
@@ -172,9 +204,9 @@ export function getInspectorTooltipStyle(rect: DOMRect, theme: ToolbarTheme): CS
   }
 }
 
-export function getInspectorTooltipTextStyle(): CSSProperties {
+export function getInspectorTooltipTextStyle(accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
   return {
-    color: INSPECTOR_COLOR,
+    color: accentColor,
     fontWeight: 600,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -227,19 +259,19 @@ export function getFeedbackTextareaStyle(theme: ToolbarTheme): CSSProperties {
     fontFamily: 'inherit',
     fontSize: 13,
     lineHeight: 1.5,
-    resize: 'vertical' as const,
+    resize: 'none' as const,
     outline: 'none',
     boxSizing: 'border-box' as const,
   }
 }
 
-export function getFeedbackSubmitStyle(theme: ToolbarTheme, disabled: boolean): CSSProperties {
+export function getFeedbackSubmitStyle(theme: ToolbarTheme, disabled: boolean, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
   return {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
     padding: '6px 14px',
-    backgroundColor: disabled ? '#6b7280' : INSPECTOR_COLOR,
+    backgroundColor: disabled ? '#6b7280' : accentColor,
     color: '#ffffff',
     border: 'none',
     borderRadius: 6,
@@ -284,7 +316,7 @@ export function getFeedbackCloseStyle(theme: ToolbarTheme): CSSProperties {
 
 // --- Step Number Marker styles ---
 
-export function getStepMarkerStyle(x: number, y: number): CSSProperties {
+export function getStepMarkerStyle(x: number, y: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
   return {
     position: 'fixed',
     left: x - 12,
@@ -294,13 +326,13 @@ export function getStepMarkerStyle(x: number, y: number): CSSProperties {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: INSPECTOR_COLOR,
+    backgroundColor: accentColor,
     color: '#ffffff',
     borderRadius: '50%',
     fontSize: 11,
     fontWeight: 700,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)',
+    boxShadow: `0 2px 8px ${hexToRgba(accentColor, 0.4)}`,
     cursor: 'pointer',
     userSelect: 'none',
     transition: 'transform 150ms ease',
@@ -340,7 +372,9 @@ export function getStepMarkerTooltipStyle(theme: ToolbarTheme): CSSProperties {
     left: 32,
     top: '50%',
     transform: 'translateY(-50%)',
-    padding: '6px 10px',
+    width: 'max-content',
+    maxWidth: 260,
+    padding: '8px 10px',
     backgroundColor: colors.bg,
     color: colors.text,
     border: `1px solid ${colors.border}`,
@@ -348,9 +382,99 @@ export function getStepMarkerTooltipStyle(theme: ToolbarTheme): CSSProperties {
     fontSize: 12,
     lineHeight: 1.4,
     whiteSpace: 'pre-wrap' as const,
-    maxWidth: 220,
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
     pointerEvents: 'none' as const,
     wordBreak: 'break-word' as const,
   }
+}
+
+export function getMarkerTooltipSelectorStyle(accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    color: accentColor,
+    fontSize: 10,
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+    opacity: 0.8,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    maxWidth: 240,
+    display: 'block',
+    marginBottom: 2,
+  }
+}
+
+// --- Feedback Edit Popup styles ---
+
+export function getEditPopupOverlayStyle(): CSSProperties {
+  return {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
+}
+
+export function getEditPopupStyle(theme: ToolbarTheme): CSSProperties {
+  const colors = THEME_MAP[theme]
+  return {
+    width: 340,
+    padding: 16,
+    backgroundColor: colors.bg,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 12,
+    boxShadow: '0 16px 48px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.15)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: 13,
+  }
+}
+
+export function getEditPopupHeaderStyle(theme: ToolbarTheme, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    color: accentColor,
+    fontSize: 11,
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+    fontWeight: 600,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  }
+}
+
+export function getEditPopupFooterStyle(): CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  }
+}
+
+export function getEditPopupBtnStyle(theme: ToolbarTheme, variant: 'primary' | 'ghost' | 'danger', accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  const colors = THEME_MAP[theme]
+  const base: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '6px 14px',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  }
+  if (variant === 'primary') {
+    return { ...base, backgroundColor: accentColor, color: '#ffffff' }
+  }
+  if (variant === 'danger') {
+    return { ...base, backgroundColor: 'transparent', color: '#ef4444', padding: '6px 10px' }
+  }
+  // ghost
+  return { ...base, backgroundColor: 'transparent', color: colors.text, opacity: 0.7 }
 }

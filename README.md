@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/logo/logo-full.png" alt="pro-ui-feedbacks" width="480" />
+  <img src="assets/images/logo/og-image.png" alt="pro-ui-feedbacks" width="480" />
 </p>
 
 <p align="center">
@@ -21,6 +21,7 @@
 - **Tiny Footprint** — ~14 kB minified, zero runtime dependencies (only `react`, `react-dom`, and `lucide-react` as peer deps)
 - **Portal-Based** — renders via `createPortal` so it never conflicts with your app's layout or z-index
 - **Keyboard Accessible** — roving tabindex, arrow key navigation, Escape to close
+- **Persistent Feedbacks** — opt-in `localStorage` persistence so feedbacks survive page reload, with orphan detection for missing elements
 
 ## Install
 
@@ -60,6 +61,7 @@ The toolbar appears as a collapsed floating button (bottom-right by default). Cl
 | `zIndex` | `number` | `9999` | Base z-index for all layers |
 | `triggerIcon` | `ReactNode` | `<Menu />` | Custom icon for the trigger button |
 | `style` | `CSSProperties` | — | Additional inline styles for the container |
+| `persist` | `boolean \| string` | — | Enable localStorage persistence. `true` = per-page key, string = custom key |
 
 ### Callbacks
 
@@ -94,9 +96,10 @@ interface FeedbackItem {
   selector: string        // CSS selector of target element
   offsetX: number         // offset from element's top-left
   offsetY: number
-  targetElement: HTMLElement
-  element: InspectedElement
+  targetElement: HTMLElement | null
+  element: InspectedElement | null
   createdAt: number       // timestamp
+  orphan?: boolean        // true when element not found after reload
 }
 
 type ToolbarPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
@@ -146,6 +149,18 @@ function ReviewPage() {
   )
 }
 ```
+
+### Persist feedbacks across reloads
+
+```tsx
+// Auto per-page key (based on pathname)
+<ProUIFeedbacks persist />
+
+// Custom storage key
+<ProUIFeedbacks persist="my-review-session" />
+```
+
+When `persist` is enabled, feedbacks are saved to `localStorage` and restored on page reload. If a target element can no longer be found in the DOM, its marker is displayed as an orphan with a warning indicator.
 
 ### Custom trigger icon
 

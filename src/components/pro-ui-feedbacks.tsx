@@ -10,14 +10,20 @@ import {
   getDividerStyle,
   getItemsContainerStyle,
   getHoverBg,
+  getBadgeStyle,
 } from '../styles'
 import { ToolbarButton } from './toolbar-button'
 import { useSmartInspector } from '../hooks/use-smart-inspector'
 import { useFeedbackStore } from '../hooks/use-feedback-store'
+import { useSettingsStore } from '../hooks/use-settings-store'
+import { usePathname } from '../hooks/use-pathname'
 import { buildPersistKey } from '../utils/feedback-persistence'
+import { formatDetailed, formatDebug } from '../utils/format-feedbacks'
 import { SmartInspectorOverlay } from './smart-inspector-overlay'
 import { FeedbackPopover } from './feedback-popover'
 import { FeedbackMarkers } from './feedback-markers'
+import { SettingsPopup } from './settings-popup'
+import { FeedbackListPopup } from './feedback-list-popup'
 
 const ICON_SIZE = 16
 
@@ -32,12 +38,13 @@ export function ProUIFeedbacks({
   onInspect,
   onFeedbackSubmit,
   onFeedbackDelete,
+  onFeedbackUpdate,
   onFeedback,
   onCopy,
   onDelete,
   onSettings,
   position = 'bottom-right',
-  theme = 'dark',
+  theme: themeProp = 'dark',
   defaultCollapsed = true,
   zIndex = 9999,
   triggerIcon,
@@ -48,14 +55,32 @@ export function ProUIFeedbacks({
   const [active, setActive] = useState(false)
   const [triggerHovered, setTriggerHovered] = useState(false)
   const [focusIndex, setFocusIndex] = useState(-1)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [feedbackListOpen, setFeedbackListOpen] = useState(false)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null)
 
-  const persistKey = persist ? buildPersistKey(persist) : undefined
-  const { feedbacks, addFeedback, deleteFeedback, clearFeedbacks } = useFeedbackStore(persistKey)
+  const pathname = usePathname()
+  const persistKey = persist ? buildPersistKey(persist, pathname) : undefined
+  const { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks } = useFeedbackStore(persistKey)
+  const settings = useSettingsStore(themeProp)
+  const theme = settings.theme
+  const accentColor = settings.markerColor
 
   const expanded = !collapsed
+
+  // Reset inspector/popups on page change
+  const prevPathnameRef = useRef(pathname)
+  useEffect(() => {
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname
+      setActive(false)
+      setPendingFeedback(null)
+      setSettingsOpen(false)
+      setFeedbackListOpen(false)
+    }
+  }, [pathname])
 
   useEffect(() => {
     setMounted(true)
@@ -130,13 +155,29 @@ export function ProUIFeedbacks({
     onDelete?.()
   }, [clearFeedbacks, onDelete])
 
+  const handleCopy = useCallback(() => {
+    const text = settings.outputMode === 'debug' ? formatDebug(feedbacks) : formatDetailed(feedbacks)
+    navigator.clipboard.writeText(text).catch(() => { /* silent */ })
+    onCopy?.()
+  }, [feedbacks, settings.outputMode, onCopy])
+
+  const handleFeedbackListToggle = useCallback(() => {
+    setFeedbackListOpen((prev) => !prev)
+    onFeedback?.()
+  }, [onFeedback])
+
+  const handleSettingsToggle = useCallback(() => {
+    setSettingsOpen((prev) => !prev)
+    onSettings?.()
+  }, [onSettings])
+
   // Build the pre-configured items
   const items = [
     { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', onClick: handleToggle, active },
-    { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, onClick: onFeedback ?? (() => {}) },
-    { id: 'copy', icon: <Copy size={ICON_SIZE} />, label: 'Copy', onClick: onCopy ?? (() => {}) },
+    { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, onClick: handleFeedbackListToggle },
+    { id: 'copy', icon: <Copy size={ICON_SIZE} />, label: 'Copy', onClick: handleCopy },
     { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', onClick: handleDeleteAll },
-    { id: 'settings', icon: <Settings size={ICON_SIZE} />, label: 'Settings', onClick: onSettings ?? (() => {}) },
+    { id: 'settings', icon: <Settings size={ICON_SIZE} />, label: 'Settings', onClick: handleSettingsToggle },
     { id: 'close', icon: <X size={ICON_SIZE} />, label: 'Close', onClick: handleClose },
   ]
 
@@ -178,10 +219,13 @@ export function ProUIFeedbacks({
     if (collapsed || active) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
-        setCollapsed(true)
-        setFocusIndex(-1)
-      }
+      const target = e.target as HTMLElement
+      // Ignore clicks on toolbar, feedback markers, and edit popups
+      if (toolbarRef.current?.contains(target)) return
+      if (target.closest('[data-smart-inspector]')) return
+
+      setCollapsed(true)
+      setFocusIndex(-1)
     }
 
     document.addEventListener('mousedown', handleClickOutside)
@@ -195,9 +239,10 @@ export function ProUIFeedbacks({
     ...style,
   }
 
-  const triggerStyle = {
+  const triggerStyle: React.CSSProperties = {
     ...getTriggerButtonStyle(theme),
     backgroundColor: triggerHovered ? getHoverBg(theme) : 'transparent',
+    position: 'relative',
   }
 
   const toolbar = (
@@ -215,11 +260,16 @@ export function ProUIFeedbacks({
           style={triggerStyle}
           onClick={toggleCollapsed}
           aria-expanded={expanded}
-          aria-label={expanded ? 'Collapse toolbar' : 'Expand toolbar'}
+          aria-label={expanded ? 'Collapse toolbar' : `Expand toolbar${collapsed && feedbacks.length > 0 ? ` (${feedbacks.length} feedbacks)` : ''}`}
           onMouseEnter={() => setTriggerHovered(true)}
           onMouseLeave={() => setTriggerHovered(false)}
         >
           {triggerIcon || <Menu size={18} />}
+          {collapsed && feedbacks.length > 0 && (
+            <span style={getBadgeStyle(theme, accentColor)} aria-hidden="true">
+              {feedbacks.length > 99 ? '99+' : feedbacks.length}
+            </span>
+          )}
         </button>
 
         {/* Pre-configured items with animation */}
@@ -233,6 +283,7 @@ export function ProUIFeedbacks({
               theme={theme}
               tabIndex={index === focusIndex ? 0 : -1}
               active={item.active}
+              accentColor={accentColor}
               onClick={item.onClick}
             />
           ))}
@@ -241,11 +292,13 @@ export function ProUIFeedbacks({
     </div>
   )
 
+  const toolbarRect = toolbarRef.current?.getBoundingClientRect() ?? null
+
   return (
     <>
       {createPortal(toolbar, document.body)}
       {active && !pendingFeedback && (
-        <SmartInspectorOverlay hoveredElement={hoveredElement} theme={theme} zIndex={zIndex} />
+        <SmartInspectorOverlay hoveredElement={hoveredElement} theme={theme} zIndex={zIndex} accentColor={accentColor} />
       )}
       {pendingFeedback && (
         <FeedbackPopover
@@ -255,6 +308,7 @@ export function ProUIFeedbacks({
           theme={theme}
           zIndex={zIndex}
           stepNumber={feedbacks.length + 1}
+          accentColor={accentColor}
           onSubmit={handleFeedbackSubmit}
           onClose={handleFeedbackClose}
         />
@@ -263,11 +317,42 @@ export function ProUIFeedbacks({
         feedbacks={feedbacks}
         theme={theme}
         zIndex={zIndex}
-        onMarkerClick={(fb) => {
+        visible={expanded || active}
+        accentColor={accentColor}
+        onUpdate={(id, content) => {
+          updateFeedback(id, content)
+          onFeedbackUpdate?.(id, content)
+        }}
+        onDelete={(fb) => {
           deleteFeedback(fb.id)
           onFeedbackDelete?.(fb.id)
         }}
       />
+      {settingsOpen && createPortal(
+        <SettingsPopup
+          theme={theme}
+          outputMode={settings.outputMode}
+          markerColor={accentColor}
+          onToggleTheme={settings.toggleTheme}
+          onOutputModeChange={settings.setOutputMode}
+          onMarkerColorChange={settings.setMarkerColor}
+          onClose={() => setSettingsOpen(false)}
+          toolbarRect={toolbarRect}
+          zIndex={zIndex}
+        />,
+        document.body
+      )}
+      {feedbackListOpen && createPortal(
+        <FeedbackListPopup
+          feedbacks={feedbacks}
+          theme={theme}
+          accentColor={accentColor}
+          onClose={() => setFeedbackListOpen(false)}
+          toolbarRect={toolbarRect}
+          zIndex={zIndex}
+        />,
+        document.body
+      )}
     </>
   )
 }

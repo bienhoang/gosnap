@@ -11,9 +11,10 @@ interface SmartInspectorOverlayProps {
   hoveredElement: InspectedElement | null
   theme: ToolbarTheme
   zIndex: number
+  accentColor?: string
 }
 
-export function SmartInspectorOverlay({ hoveredElement, theme, zIndex }: SmartInspectorOverlayProps) {
+export function SmartInspectorOverlay({ hoveredElement, theme, zIndex, accentColor }: SmartInspectorOverlayProps) {
   if (!hoveredElement) return null
 
   const { rect, selector, dimensions } = hoveredElement
@@ -21,11 +22,11 @@ export function SmartInspectorOverlay({ hoveredElement, theme, zIndex }: SmartIn
   const overlay = (
     <div data-smart-inspector="true" style={{ pointerEvents: 'none', position: 'fixed', inset: 0, zIndex: zIndex + 1 }}>
       {/* Highlight box */}
-      <div style={getInspectorHighlightStyle(rect)} />
+      <div style={getInspectorHighlightStyle(rect, accentColor)} />
 
       {/* Element info tooltip */}
       <div style={getInspectorTooltipStyle(rect, theme)}>
-        <span style={getInspectorTooltipTextStyle()}>{selector}</span>
+        <span style={getInspectorTooltipTextStyle(accentColor)}>{selector}</span>
         <span style={getInspectorTooltipDimStyle(theme)}>
           {dimensions.width} × {dimensions.height}
         </span>

@@ -10,12 +10,13 @@ interface ToolbarButtonProps {
   tabIndex: number
   active?: boolean
   disabled?: boolean
+  accentColor?: string
   onClick: () => void
 }
 
-export function ToolbarButton({ icon, label, theme, tabIndex, active, disabled, onClick }: ToolbarButtonProps) {
+export function ToolbarButton({ icon, label, theme, tabIndex, active, disabled, accentColor, onClick }: ToolbarButtonProps) {
   const [hovered, setHovered] = useState(false)
-  const baseStyle = getItemButtonStyle(theme, active, disabled)
+  const baseStyle = getItemButtonStyle(theme, active, disabled, accentColor)
 
   const style = {
     ...baseStyle,

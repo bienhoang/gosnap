@@ -1,13 +1,29 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import type { FeedbackItem, ToolbarTheme } from '../types'
-import { getStepMarkerStyle, getStepMarkerTooltipStyle, getOrphanMarkerStyle } from '../styles'
+import {
+  getStepMarkerStyle,
+  getStepMarkerTooltipStyle,
+  getMarkerTooltipSelectorStyle,
+  getOrphanMarkerStyle,
+  getEditPopupOverlayStyle,
+  getEditPopupStyle,
+  getEditPopupHeaderStyle,
+  getEditPopupFooterStyle,
+  getEditPopupBtnStyle,
+  getFeedbackTextareaStyle,
+} from '../styles'
 
 interface FeedbackMarkersProps {
   feedbacks: FeedbackItem[]
   theme: ToolbarTheme
   zIndex: number
-  onMarkerClick?: (feedback: FeedbackItem) => void
+  /** When false, markers are hidden but feedbacks data is preserved */
+  visible?: boolean
+  accentColor?: string
+  onDelete?: (feedback: FeedbackItem) => void
+  onUpdate?: (id: string, content: string) => void
 }
 
 /** Resolve the target element — use stored ref, fall back to querySelector */
@@ -16,9 +32,12 @@ function resolveElement(fb: FeedbackItem): HTMLElement | null {
   return document.querySelector(fb.selector) as HTMLElement | null
 }
 
-export function FeedbackMarkers({ feedbacks, theme, zIndex, onMarkerClick }: FeedbackMarkersProps) {
+export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, onDelete, onUpdate }: FeedbackMarkersProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [editingFb, setEditingFb] = useState<FeedbackItem | null>(null)
+  const [editContent, setEditContent] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const rafRef = useRef<number>(0)
 
   const { active, orphans } = useMemo(() => {
@@ -59,10 +78,12 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, onMarkerClick }: Fee
     rafRef.current = requestAnimationFrame(syncPositions)
   }, [syncPositions])
 
+  // Re-sync positions before every paint so React re-renders
+  // don't reset DOM-manipulated left/top back to (0, 0)
+  useLayoutEffect(syncPositions)
+
   useEffect(() => {
     if (active.length === 0) return
-
-    syncPositions()
 
     window.addEventListener('scroll', requestSync, true)
     window.addEventListener('resize', requestSync)
@@ -74,7 +95,88 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, onMarkerClick }: Fee
     }
   }, [active, syncPositions, requestSync])
 
-  if (feedbacks.length === 0) return null
+  // Auto-focus textarea when edit popup opens
+  useEffect(() => {
+    if (editingFb && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [editingFb])
+
+  const handleEditOpen = useCallback((fb: FeedbackItem) => {
+    setEditingFb(fb)
+    setEditContent(fb.content)
+    setHoveredId(null)
+  }, [])
+
+  const handleEditSave = useCallback(() => {
+    if (!editingFb || !editContent.trim()) return
+    onUpdate?.(editingFb.id, editContent.trim())
+    setEditingFb(null)
+  }, [editingFb, editContent, onUpdate])
+
+  const handleEditDelete = useCallback(() => {
+    if (!editingFb) return
+    onDelete?.(editingFb)
+    setEditingFb(null)
+  }, [editingFb, onDelete])
+
+  const handleEditCancel = useCallback(() => {
+    setEditingFb(null)
+  }, [])
+
+  const handleEditKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleEditCancel()
+    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      handleEditSave()
+    }
+  }, [handleEditCancel, handleEditSave])
+
+  if (feedbacks.length === 0 || !visible) return null
+
+  const editPopup = editingFb && (
+    <div
+      data-smart-inspector="edit-popup"
+      style={{ ...getEditPopupOverlayStyle(), zIndex: zIndex + 10 }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) handleEditCancel() }}
+    >
+      <div style={getEditPopupStyle(theme)} onKeyDown={handleEditKeyDown}>
+        {/* Header — selector */}
+        <div style={getEditPopupHeaderStyle(theme, accentColor)} title={editingFb.selector}>
+          #{editingFb.stepNumber} — {editingFb.selector}
+        </div>
+
+        {/* Textarea */}
+        <textarea
+          ref={textareaRef}
+          style={getFeedbackTextareaStyle(theme)}
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          placeholder="Edit feedback..."
+        />
+
+        {/* Footer — cancel/save left, delete right */}
+        <div style={getEditPopupFooterStyle()}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button type="button" style={getEditPopupBtnStyle(theme, 'ghost', accentColor)} onClick={handleEditCancel}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              style={getEditPopupBtnStyle(theme, 'primary', accentColor)}
+              onClick={handleEditSave}
+              disabled={!editContent.trim()}
+            >
+              Save
+            </button>
+          </div>
+          <button type="button" style={getEditPopupBtnStyle(theme, 'danger', accentColor)} onClick={handleEditDelete}>
+            <Trash2 size={12} /> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   const markers = (
     <div
@@ -83,47 +185,60 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, onMarkerClick }: Fee
       style={{ position: 'fixed', inset: 0, zIndex: zIndex + 1, pointerEvents: 'none' }}
     >
       {/* Active markers — positioned relative to target elements */}
-      {active.map((fb) => (
-        <div
-          key={fb.id}
-          data-marker-id={fb.id}
-          style={{ ...getStepMarkerStyle(0, 0), pointerEvents: 'auto' }}
-          onMouseEnter={() => setHoveredId(fb.id)}
-          onMouseLeave={() => setHoveredId(null)}
-          onClick={() => onMarkerClick?.(fb)}
-          title={`#${fb.stepNumber}: ${fb.content}`}
-        >
-          {fb.stepNumber}
-          {hoveredId === fb.id && (
-            <div style={getStepMarkerTooltipStyle(theme)}>
-              {fb.content}
-            </div>
-          )}
-        </div>
-      ))}
+      {active.map((fb) => {
+        const isHovered = hoveredId === fb.id
+        return (
+          <div
+            key={fb.id}
+            data-marker-id={fb.id}
+            style={{ ...getStepMarkerStyle(0, 0, accentColor), pointerEvents: 'auto' }}
+            onMouseEnter={() => setHoveredId(fb.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            onClick={() => handleEditOpen(fb)}
+            title={`#${fb.stepNumber}: ${fb.content}`}
+          >
+            {isHovered ? <Pencil size={12} /> : fb.stepNumber}
+            {isHovered && (
+              <div style={getStepMarkerTooltipStyle(theme)}>
+                <span style={getMarkerTooltipSelectorStyle(accentColor)}>{fb.selector}</span>
+                {fb.content}
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {/* Orphan markers — stacked at bottom-left */}
-      {orphans.map((fb, i) => (
-        <div
-          key={fb.id}
-          style={{ ...getOrphanMarkerStyle(i), pointerEvents: 'auto' }}
-          onMouseEnter={() => setHoveredId(fb.id)}
-          onMouseLeave={() => setHoveredId(null)}
-          onClick={() => onMarkerClick?.(fb)}
-          title={`#${fb.stepNumber}: Element not found`}
-        >
-          {fb.stepNumber}
-          {hoveredId === fb.id && (
-            <div style={getStepMarkerTooltipStyle(theme)}>
-              <span style={{ color: '#ef4444', fontWeight: 600 }}>Element not found</span>
-              {'\n'}
-              {fb.content}
-            </div>
-          )}
-        </div>
-      ))}
+      {orphans.map((fb, i) => {
+        const isHovered = hoveredId === fb.id
+        return (
+          <div
+            key={fb.id}
+            style={{ ...getOrphanMarkerStyle(i), pointerEvents: 'auto' }}
+            onMouseEnter={() => setHoveredId(fb.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            onClick={() => handleEditOpen(fb)}
+            title={`#${fb.stepNumber}: Element not found`}
+          >
+            {isHovered ? <Pencil size={12} /> : fb.stepNumber}
+            {isHovered && (
+              <div style={getStepMarkerTooltipStyle(theme)}>
+                <span style={{ ...getMarkerTooltipSelectorStyle(accentColor), color: '#ef4444' }}>
+                  Element not found — {fb.selector}
+                </span>
+                {fb.content}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 
-  return createPortal(markers, document.body)
+  return (
+    <>
+      {createPortal(markers, document.body)}
+      {editPopup && createPortal(editPopup, document.body)}
+    </>
+  )
 }

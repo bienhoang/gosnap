@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro UI Feedbacks — Visual UI Feedback for React</title>
+  <meta name="description"
+    content="A lightweight floating toolbar for collecting visual UI feedback directly on your React or Next.js app. Inspect elements, annotate your UI, and collect structured feedback.">
+  <meta property="og:title" content="pro-ui-feedbacks">
+  <meta property="og:description"
+    content="Visual UI feedback toolkit for React. Inspect elements, leave annotations, collect structured feedback.">
+  <meta property="og:image" content="assets/images/logo/og-image.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="assets/images/logo/logo-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ========================================
+       CSS Custom Properties
+       ======================================== */
+    :root {
+      --blue-500: #3B82F6;
+      --blue-600: #2563EB;
+      --blue-700: #1D4ED8;
+      --blue-400: #60A5FA;
+      --slate-900: #0F172A;
+      --slate-800: #1E293B;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-400: #94A3B8;
+      --slate-300: #CBD5E1;
+      --slate-100: #F1F5F9;
+      --slate-50: #F8FAFC;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+      --transition: 200ms ease;
+    }
+
+    /* ========================================
+       Reset & Base
+       ======================================== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--slate-900);
+      color: var(--slate-100);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    code {
+      font-family: var(--font-mono);
+    }
+
+    /* ========================================
+       Utilities
+       ======================================== */
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue-400);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      color: var(--slate-100);
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      color: var(--slate-400);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
+      html {
+        scroll-behavior: auto;
+      }
+
+      .toolbar-demo {
+        animation: none !important;
+      }
+
+      .toolbar-demo * {
+        animation: none !important;
+      }
+    }
+
+    /* ========================================
+       Navbar
+       ======================================== */
+    .navbar {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius);
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    .nav-name {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-100);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      color: var(--slate-400);
+      transition: color var(--transition), background var(--transition);
+    }
+
+    .nav-link:hover {
+      color: var(--slate-100);
+      background: var(--slate-800);
+    }
+
+    .nav-link svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      background: var(--blue-600);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition);
+      margin-left: 4px;
+    }
+
+    .nav-cta:hover {
+      background: var(--blue-500);
+    }
+
+    /* ========================================
+       Hero
+       ======================================== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 20px 80px;
+      position: relative;
+    }
+
+    /* Subtle radial glow behind hero */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue-400);
+      margin-bottom: 28px;
+    }
+
+    .hero-badge svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--slate-100);
+      max-width: 720px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .hero h1 .accent {
+      color: var(--blue-400);
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2.2vw, 19px);
+      color: var(--slate-400);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--blue-600);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), transform var(--transition);
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-500);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: transparent;
+      color: var(--slate-300);
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--slate-700);
+      transition: border-color var(--transition), color var(--transition), transform var(--transition);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--slate-400);
+      color: var(--slate-100);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* npm install pill */
+    .install-cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--slate-300);
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .install-cmd .dollar {
+      color: var(--slate-600);
+      user-select: none;
+    }
+
+    .install-cmd .pkg {
+      color: var(--blue-400);
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      color: var(--slate-400);
+      transition: color var(--transition), background var(--transition);
+    }
+
+    .copy-btn:hover {
+      color: var(--slate-100);
+      background: var(--slate-700);
+    }
+
+    .copy-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .copy-tooltip {
+      position: absolute;
+      top: -32px;
+      right: 0;
+      padding: 4px 10px;
+      background: var(--blue-600);
+      color: #fff;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      border-radius: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+
+    .copy-tooltip.show {
+      opacity: 1;
+    }
+
+    /* ========================================
+       Toolbar Demo (CSS-only mockup)
+       ======================================== */
+    .hero-demo {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .demo-window {
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .demo-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid var(--slate-700);
+    }
+
+    .demo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .demo-dot.red {
+      background: #EF4444;
+    }
+
+    .demo-dot.yellow {
+      background: #F59E0B;
+    }
+
+    .demo-dot.green {
+      background: #22C55E;
+    }
+
+    .demo-titlebar-text {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--slate-600);
+      font-family: var(--font-mono);
+      margin-right: 36px;
+    }
+
+    .demo-body {
+      padding: 32px 24px;
+      position: relative;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Fake UI lines */
+    .demo-line {
+      height: 12px;
+      background: var(--slate-700);
+      border-radius: 6px;
+    }
+
+    .demo-line.w80 {
+      width: 80%;
+    }
+
+    .demo-line.w60 {
+      width: 60%;
+    }
+
+    .demo-line.w90 {
+      width: 90%;
+    }
+
+    .demo-line.w50 {
+      width: 50%;
+    }
+
+    .demo-line.short {
+      height: 8px;
+    }
+
+    .demo-card-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .demo-card {
+      flex: 1;
+      height: 64px;
+      background: rgba(51, 65, 85, 0.5);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius-sm);
+    }
+
+    /* Inspector highlight on one card */
+    .demo-card.inspected {
+      border: 2px solid var(--blue-500);
+      background: rgba(59, 130, 246, 0.06);
+      position: relative;
+    }
+
+    /* Selector tooltip */
+    .demo-selector {
+      position: absolute;
+      bottom: -28px;
+      left: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    .demo-selector .sel-tag {
+      color: var(--blue-400);
+      font-weight: 600;
+    }
+
+    .demo-selector .sel-dim {
+      color: var(--slate-400);
+    }
+
+    /* Step marker */
+    .demo-marker {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 22px;
+      height: 22px;
+      background: var(--blue-500);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+      z-index: 3;
+    }
+
+    /* Floating toolbar in demo */
+    .demo-toolbar {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .demo-tb-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: #e5e5e5;
+    }
+
+    .demo-tb-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .demo-tb-btn.active {
+      background: var(--blue-500);
+      color: #fff;
+    }
+
+    .demo-tb-divider {
+      width: 1px;
+      height: 18px;
+      background: #333;
+      margin: 0 3px;
+    }
+
+    /* ========================================
+       Features (Bento Grid)
+       ======================================== */
+    .features {
+      padding: 100px 0;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .features-header .section-desc {
+      margin: 0 auto;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .bento-card {
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+      cursor: pointer;
+    }
+
+    .bento-card:hover {
+      border-color: var(--slate-600);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* First two cards span wider */
+    .bento-card:nth-child(1) {
+      grid-column: span 2;
+    }
+
+    .bento-card:nth-child(2) {
+      grid-column: span 1;
+    }
+
+    .bento-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 10px;
+      color: var(--blue-400);
+      margin-bottom: 16px;
+    }
+
+    .bento-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .bento-card h3 {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--slate-100);
+      margin-bottom: 8px;
+    }
+
+    .bento-card p {
+      font-size: 14px;
+      color: var(--slate-400);
+      line-height: 1.6;
+    }
+
+    /* ========================================
+       Code Example
+       ======================================== */
+    .code-section {
+      padding: 100px 0;
+    }
+
+    .code-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .code-left {}
+
+    .code-block {
+      position: relative;
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(30, 41, 59, 0.6);
+      border-bottom: 1px solid var(--slate-700);
+    }
+
+    .code-filename {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--slate-400);
+    }
+
+    .code-copy {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      color: var(--slate-400);
+      transition: color var(--transition), background var(--transition);
+      position: relative;
+    }
+
+    .code-copy:hover {
+      color: var(--slate-100);
+      background: var(--slate-700);
+    }
+
+    .code-copy svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .code-body {
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+      white-space: pre;
+      color: var(--slate-300);
+    }
+
+    /* Syntax highlighting tokens */
+    .tok-kw {
+      color: #C084FC;
+    }
+
+    /* keyword: import, from, function, return, const */
+    .tok-str {
+      color: #34D399;
+    }
+
+    /* string */
+    .tok-fn {
+      color: #60A5FA;
+    }
+
+    /* function name */
+    .tok-comp {
+      color: #F472B6;
+    }
+
+    /* component */
+    .tok-prop {
+      color: #FBBF24;
+    }
+
+    /* prop */
+    .tok-comment {
+      color: var(--slate-600);
+      font-style: italic;
+    }
+
+    .tok-tag {
+      color: #F472B6;
+    }
+
+    /* JSX tag */
+    .tok-punct {
+      color: var(--slate-600);
+    }
+
+    /* brackets, parens */
+    .tok-arrow {
+      color: #C084FC;
+    }
+
+    .code-right {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .code-right .section-desc {
+      max-width: 100%;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: var(--blue-400);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--slate-400);
+      line-height: 1.6;
+    }
+
+    .step-text strong {
+      color: var(--slate-100);
+      font-weight: 600;
+    }
+
+    /* ========================================
+       API Reference
+       ======================================== */
+    .api-section {
+      padding: 100px 0;
+    }
+
+    .api-header {
+      margin-bottom: 48px;
+    }
+
+    .api-table-wrap {
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .api-table thead {
+      background: rgba(30, 41, 59, 0.6);
+    }
+
+    .api-table th {
+      padding: 12px 20px;
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--slate-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--slate-700);
+    }
+
+    .api-table td {
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      color: var(--slate-300);
+      vertical-align: top;
+    }
+
+    .api-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .api-table .prop-name {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--blue-400);
+      font-weight: 500;
+    }
+
+    .api-table .prop-type {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--slate-400);
+    }
+
+    .api-table .prop-default {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--slate-600);
+    }
+
+    .api-callbacks {
+      margin-top: 32px;
+    }
+
+    .api-callbacks h3 {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* ========================================
+       Footer
+       ======================================== */
+    .footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--slate-700);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+    }
+
+    .footer-name {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--slate-400);
+    }
+
+    .footer-center {
+      font-size: 13px;
+      color: var(--slate-600);
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      color: var(--slate-400);
+      transition: color var(--transition);
+    }
+
+    .footer-link:hover {
+      color: var(--slate-100);
+    }
+
+    .footer-link svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--slate-600);
+    }
+
+    /* ========================================
+       Responsive
+       ======================================== */
+    @media (max-width: 900px) {
+      .bento-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .bento-card:nth-child(1) {
+        grid-column: span 2;
+      }
+
+      .code-layout {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .navbar {
+        padding: 8px 14px;
+        top: 8px;
+        left: 10px;
+        right: 10px;
+      }
+
+      .nav-name {
+        display: none;
+      }
+
+      .nav-cta {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      .hero {
+        padding: 100px 16px 60px;
+        min-height: auto;
+      }
+
+      .hero h1 {
+        font-size: 32px;
+      }
+
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bento-card:nth-child(1),
+      .bento-card:nth-child(2) {
+        grid-column: span 1;
+      }
+
+      .install-cmd {
+        font-size: 12px;
+        padding: 8px 12px;
+      }
+
+      .api-table-wrap {
+        overflow-x: auto;
+      }
+
+      .api-table {
+        min-width: 560px;
+      }
+
+      .footer-inner {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .footer-center {
+        width: 100%;
+        order: 3;
+      }
+
+      .demo-card-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================
+       Navbar
+       ======================================== -->
+  <nav class="navbar">
+    <a href="#" class="nav-left">
+      <img src="assets/images/logo/logo-icon.png" alt="pro-ui-feedbacks logo" class="nav-logo">
+      <span class="nav-name">pro-ui-feedbacks</span>
+    </a>
+    <div class="nav-right">
+      <a href="https://github.com/user/pro-ui-feedbacks" class="nav-link" aria-label="GitHub" target="_blank"
+        rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+        </svg>
+      </a>
+      <a href="https://www.npmjs.com/package/pro-ui-feedbacks" class="nav-link" aria-label="npm" target="_blank"
+        rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323h13.74v13.354H15.5V8.692H12v10.005H5.13z" />
+        </svg>
+      </a>
+      <a href="#get-started" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ========================================
+         Hero
+         ======================================== -->
+    <section class="hero" id="hero">
+      <div class="hero-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        Open Source &middot; MIT License
+      </div>
+
+      <h1>Visual UI <span class="accent">Feedback</span> for React</h1>
+      <p class="hero-sub">Drop a floating toolbar into your React app. Inspect elements, annotate your UI, and collect
+        structured feedback — in seconds.</p>
+
+      <div class="hero-actions">
+        <a href="#get-started" class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          Get Started
+        </a>
+        <a href="https://github.com/user/pro-ui-feedbacks" class="btn-outline" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path
+              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <div class="install-cmd" id="get-started">
+        <span class="dollar">$</span>
+        <span>npm install <span class="pkg">pro-ui-feedbacks</span> lucide-react</span>
+        <button class="copy-btn" onclick="copyInstall()" aria-label="Copy install command">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
+        </button>
+        <span class="copy-tooltip" id="installTooltip">Copied!</span>
+      </div>
+
+      <!-- Toolbar Demo Mockup -->
+      <div class="hero-demo fade-in">
+        <div class="demo-window">
+          <div class="demo-titlebar">
+            <span class="demo-dot red"></span>
+            <span class="demo-dot yellow"></span>
+            <span class="demo-dot green"></span>
+            <span class="demo-titlebar-text">my-app.localhost:3000</span>
+          </div>
+          <div class="demo-body">
+            <div class="demo-line w80"></div>
+            <div class="demo-line w60 short"></div>
+            <div class="demo-line w90"></div>
+            <div class="demo-card-row">
+              <div class="demo-card"></div>
+              <div class="demo-card inspected">
+                <div class="demo-marker">1</div>
+                <div class="demo-selector">
+                  <span class="sel-tag">div.card</span>
+                  <span class="sel-dim">320 × 64</span>
+                </div>
+              </div>
+              <div class="demo-card"></div>
+            </div>
+            <div class="demo-line w50 short"></div>
+
+            <!-- Floating toolbar mockup -->
+            <div class="demo-toolbar">
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                </svg>
+              </div>
+              <div class="demo-tb-divider"></div>
+              <div class="demo-tb-btn active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="6" y="4" width="4" height="16" />
+                  <rect x="14" y="4" width="4" height="16" />
+                </svg>
+              </div>
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+              </div>
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              </div>
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </div>
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </div>
+              <div class="demo-tb-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         Features
+         ======================================== -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="features-header fade-in">
+          <p class="section-label">Features</p>
+          <h2 class="section-title">Everything you need</h2>
+          <p class="section-desc">One component. No CSS imports, no providers, no config files. Just drop it in and
+            start collecting feedback.</p>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Card 1: Smart Inspector (wide) -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="22" y1="12" x2="18" y2="12" />
+                <line x1="6" y1="12" x2="2" y2="12" />
+                <line x1="12" y1="6" x2="12" y2="2" />
+                <line x1="12" y1="22" x2="12" y2="18" />
+              </svg>
+            </div>
+            <h3>Smart Inspector</h3>
+            <p>Hover to highlight any element. See CSS selectors and dimensions in real-time. Click to annotate — your
+              cursor becomes a precision tool.</p>
+          </div>
+
+          <!-- Card 2: Annotations -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+            </div>
+            <h3>Feedback Annotations</h3>
+            <p>Pin numbered markers to specific elements. Notes survive scroll and resize.</p>
+          </div>
+
+          <!-- Card 3: Toolbar -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+            </div>
+            <h3>Floating Toolbar</h3>
+            <p>Collapsible pill UI with start, feedback, copy, delete, and settings. Portal-based — never conflicts with
+              your layout.</p>
+          </div>
+
+          <!-- Card 4: Themes -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            </div>
+            <h3>Dark & Light</h3>
+            <p>Built-in theme support. All styles are inline — zero CSS imports required.</p>
+          </div>
+
+          <!-- Card 5: Zero Config -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <h3>Zero Config</h3>
+            <p>One component, no providers. Optional localStorage persistence with orphan detection.</p>
+          </div>
+
+          <!-- Card 6: Tiny & Typed -->
+          <div class="bento-card fade-in">
+            <div class="bento-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+            </div>
+            <h3>Tiny & Typed</h3>
+            <p>~14 kB minified. Full TypeScript types exported. Tree-shakeable ESM + CJS builds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         Code Example
+         ======================================== -->
+    <section class="code-section" id="code">
+      <div class="container">
+        <div class="code-layout">
+          <div class="code-left fade-in">
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-filename">App.tsx</span>
+                <button class="code-copy" onclick="copyCode()" aria-label="Copy code">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                  </svg>
+                </button>
+              </div>
+              <div class="code-body" id="codeContent"><span class="tok-kw">import</span> { <span
+                  class="tok-comp">ProUIFeedbacks</span> } <span class="tok-kw">from</span> <span
+                  class="tok-str">'pro-ui-feedbacks'</span>
+
+                <span class="tok-kw">function</span> <span class="tok-fn">App</span><span class="tok-punct">()</span> {
+                <span class="tok-kw">return</span> <span class="tok-punct">(</span>
+                <span class="tok-tag">&lt;&gt;</span>
+                <span class="tok-comment">{/* your app */}</span>
+                <span class="tok-tag">&lt;<span class="tok-comp">ProUIFeedbacks</span></span>
+                <span class="tok-prop">onFeedbackSubmit</span>=<span class="tok-punct">{</span><span
+                  class="tok-punct">(</span>fb<span class="tok-punct">)</span> <span class="tok-arrow">=&gt;</span>
+                console.<span class="tok-fn">log</span><span class="tok-punct">(</span>fb<span
+                  class="tok-punct">)</span><span class="tok-punct">}</span>
+                <span class="tok-tag">/&gt;</span>
+                <span class="tok-tag">&lt;/&gt;</span>
+                <span class="tok-punct">)</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="code-right fade-in">
+            <p class="section-label">Quick Start</p>
+            <h2 class="section-title">Three lines to feedback</h2>
+            <p class="section-desc">Import the component, drop it anywhere in your JSX, and you're ready. No wrappers,
+              no context providers.</p>
+
+            <div class="step-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <p class="step-text"><strong>Install</strong> the package and lucide-react for icons</p>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <p class="step-text"><strong>Import</strong> ProUIFeedbacks and add it to your component tree</p>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <p class="step-text"><strong>Done.</strong> Click the toolbar, inspect elements, leave feedback</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         API Reference
+         ======================================== -->
+    <section class="api-section" id="api">
+      <div class="container">
+        <div class="api-header fade-in">
+          <p class="section-label">API</p>
+          <h2 class="section-title">Fully customizable</h2>
+          <p class="section-desc">Configure position, theme, z-index, persistence, and hook into every interaction.</p>
+        </div>
+
+        <div class="api-table-wrap fade-in">
+          <table class="api-table">
+            <thead>
+              <tr>
+                <th>Prop</th>
+                <th>Type</th>
+                <th>Default</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="prop-name">position</span></td>
+                <td><span class="prop-type">'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'</span></td>
+                <td><span class="prop-default">'bottom-right'</span></td>
+                <td>Toolbar position on viewport</td>
+              </tr>
+              <tr>
+                <td><span class="prop-name">theme</span></td>
+                <td><span class="prop-type">'dark' | 'light'</span></td>
+                <td><span class="prop-default">'dark'</span></td>
+                <td>Color theme</td>
+              </tr>
+              <tr>
+                <td><span class="prop-name">defaultCollapsed</span></td>
+                <td><span class="prop-type">boolean</span></td>
+                <td><span class="prop-default">true</span></td>
+                <td>Start with toolbar collapsed</td>
+              </tr>
+              <tr>
+                <td><span class="prop-name">zIndex</span></td>
+                <td><span class="prop-type">number</span></td>
+                <td><span class="prop-default">9999</span></td>
+                <td>Base z-index for all layers</td>
+              </tr>
+              <tr>
+                <td><span class="prop-name">persist</span></td>
+                <td><span class="prop-type">boolean | string</span></td>
+                <td><span class="prop-default">—</span></td>
+                <td>Enable localStorage persistence with orphan detection</td>
+              </tr>
+              <tr>
+                <td><span class="prop-name">triggerIcon</span></td>
+                <td><span class="prop-type">ReactNode</span></td>
+                <td><span class="prop-default">&lt;Menu /&gt;</span></td>
+                <td>Custom icon for trigger button</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="api-callbacks fade-in">
+          <h3>Callbacks</h3>
+          <div class="api-table-wrap">
+            <table class="api-table">
+              <thead>
+                <tr>
+                  <th>Prop</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="prop-name">onToggle</span></td>
+                  <td><span class="prop-type">(active: boolean) =&gt; void</span></td>
+                  <td>Inspector started or stopped</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onInspect</span></td>
+                  <td><span class="prop-type">(element: InspectedElement) =&gt; void</span></td>
+                  <td>Element selected via inspector</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onFeedbackSubmit</span></td>
+                  <td><span class="prop-type">(feedback: FeedbackItem) =&gt; void</span></td>
+                  <td>Feedback annotation submitted</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onFeedbackDelete</span></td>
+                  <td><span class="prop-type">(feedbackId: string) =&gt; void</span></td>
+                  <td>Feedback marker deleted</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onCopy</span></td>
+                  <td><span class="prop-type">() =&gt; void</span></td>
+                  <td>"Copy" toolbar button clicked</td>
+                </tr>
+                <tr>
+                  <td><span class="prop-name">onDelete</span></td>
+                  <td><span class="prop-type">() =&gt; void</span></td>
+                  <td>"Delete All" toolbar button clicked</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================
+       Footer
+       ======================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <img src="assets/images/logo/logo-icon.png" alt="" class="footer-logo">
+          <span class="footer-name">pro-ui-feedbacks</span>
+        </div>
+        <span class="footer-center">MIT License</span>
+        <div class="footer-right">
+          <a href="https://github.com/user/pro-ui-feedbacks" class="footer-link" aria-label="GitHub" target="_blank"
+            rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+          </a>
+          <a href="https://www.npmjs.com/package/pro-ui-feedbacks" class="footer-link" aria-label="npm" target="_blank"
+            rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323h13.74v13.354H15.5V8.692H12v10.005H5.13z" />
+            </svg>
+          </a>
+        </div>
+      </div>
+      <p class="footer-bottom">Built for the React community</p>
+    </div>
+  </footer>
+
+  <!-- ========================================
+       Scripts
+       ======================================== -->
+  <script>
+    /* Copy install command */
+    function copyInstall() {
+      navigator.clipboard.writeText('npm install pro-ui-feedbacks lucide-react');
+      var tip = document.getElementById('installTooltip');
+      tip.classList.add('show');
+      setTimeout(function () { tip.classList.remove('show'); }, 1500);
+    }
+
+    /* Copy code block */
+    function copyCode() {
+      var code = "import { ProUIFeedbacks } from 'pro-ui-feedbacks'\n\nfunction App() {\n  return (\n    <>\n      {/* your app */}\n      <ProUIFeedbacks\n        onFeedbackSubmit={(fb) => console.log(fb)}\n      />\n    </>\n  )\n}";
+      navigator.clipboard.writeText(code);
+    }
+
+    /* Intersection Observer for fade-in */
+    (function () {
+      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mq.matches) return;
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+      document.querySelectorAll('.fade-in').forEach(function (el) {
+        observer.observe(el);
+      });
+    })();
+  </script>
+</body>
+
+</html>
