@@ -14,6 +14,7 @@ import {
 import { ToolbarButton } from './toolbar-button'
 import { useSmartInspector } from '../hooks/use-smart-inspector'
 import { useFeedbackStore } from '../hooks/use-feedback-store'
+import { buildPersistKey } from '../utils/feedback-persistence'
 import { SmartInspectorOverlay } from './smart-inspector-overlay'
 import { FeedbackPopover } from './feedback-popover'
 import { FeedbackMarkers } from './feedback-markers'
@@ -41,6 +42,7 @@ export function ProUIFeedbacks({
   zIndex = 9999,
   triggerIcon,
   style,
+  persist,
 }: ProUIFeedbacksProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const [active, setActive] = useState(false)
@@ -50,7 +52,8 @@ export function ProUIFeedbacks({
   const [mounted, setMounted] = useState(false)
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null)
 
-  const { feedbacks, addFeedback, deleteFeedback, clearFeedbacks } = useFeedbackStore()
+  const persistKey = persist ? buildPersistKey(persist) : undefined
+  const { feedbacks, addFeedback, deleteFeedback, clearFeedbacks } = useFeedbackStore(persistKey)
 
   const expanded = !collapsed
 
