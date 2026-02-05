@@ -5,7 +5,7 @@ Thanks for your interest in contributing to **pro-ui-feedbacks**!
 ## Getting Started
 
 ```bash
-git clone https://github.com/user/pro-ui-feedbacks.git
+git clone https://github.com/bienhoang/pro-ui-feedbacks.git
 cd pro-ui-feedbacks
 npm install
 npm run dev

@@ -43,16 +43,25 @@
   },
   "keywords": [
     "react",
-    "floating-toolbar",
-    "toolbar",
-    "widget",
+    "nextjs",
     "feedback",
-    "nextjs"
+    "ui-feedback",
+    "annotation",
+    "inspector",
+    "floating-toolbar",
+    "design-review",
+    "qa",
+    "toolbar",
+    "widget"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/bienhoang/pro-ui-feedbacks.git"
+  },
+  "homepage": "https://github.com/bienhoang/pro-ui-feedbacks#readme",
+  "bugs": {
+    "url": "https://github.com/bienhoang/pro-ui-feedbacks/issues"
   },
   "sideEffects": false
 }
