@@ -15,6 +15,7 @@ import {
 import { ToolbarButton } from './toolbar-button'
 import { useSmartInspector } from '../hooks/use-smart-inspector'
 import { useFeedbackStore } from '../hooks/use-feedback-store'
+import { useKeyboardShortcuts, isInputFocused } from '../hooks/use-keyboard-shortcuts'
 import { useSettingsStore } from '../hooks/use-settings-store'
 import { usePathname } from '../hooks/use-pathname'
 import { buildPersistKey } from '../utils/feedback-persistence'
@@ -60,10 +61,12 @@ export function ProUIFeedbacks({
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null)
+  const [focusedMarkerIndex, setFocusedMarkerIndex] = useState<number | null>(null)
+  const [editTargetId, setEditTargetId] = useState<string | null>(null)
 
   const pathname = usePathname()
   const persistKey = persist ? buildPersistKey(persist, pathname) : undefined
-  const { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks } = useFeedbackStore(persistKey)
+  const { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo } = useFeedbackStore(persistKey)
   const settings = useSettingsStore(themeProp)
   const theme = settings.theme
   const accentColor = settings.markerColor
@@ -79,6 +82,8 @@ export function ProUIFeedbacks({
       setPendingFeedback(null)
       setSettingsOpen(false)
       setFeedbackListOpen(false)
+      setFocusedMarkerIndex(null)
+      setEditTargetId(null)
     }
   }, [pathname])
 
@@ -170,6 +175,77 @@ export function ProUIFeedbacks({
     setSettingsOpen((prev) => !prev)
     onSettings?.()
   }, [onSettings])
+
+  // --- Keyboard shortcut handlers ---
+
+  const focusPrev = useCallback(() => {
+    setFocusedMarkerIndex((prev) => {
+      if (prev === null || prev === 0) return feedbacks.length - 1
+      return prev - 1
+    })
+  }, [feedbacks.length])
+
+  const focusNext = useCallback(() => {
+    setFocusedMarkerIndex((prev) => {
+      if (prev === null) return 0
+      return (prev + 1) % feedbacks.length
+    })
+  }, [feedbacks.length])
+
+  const openFocusedEdit = useCallback(() => {
+    if (focusedMarkerIndex === null) return
+    const fb = feedbacks[focusedMarkerIndex]
+    if (fb) setEditTargetId(fb.id)
+  }, [focusedMarkerIndex, feedbacks])
+
+  const handleEscapeChain = useCallback(() => {
+    // 1. Edit popup — handled by FeedbackMarkers internal keydown; check if it exists
+    if (document.querySelector('[data-smart-inspector="edit-popup"]')) return
+    // 2. Feedback list popup
+    if (feedbackListOpen) { setFeedbackListOpen(false); return }
+    // 3. Settings popup
+    if (settingsOpen) { setSettingsOpen(false); return }
+    // 4. Inspector
+    if (active) { handleDeactivate(); return }
+    // 5. Focused marker
+    if (focusedMarkerIndex !== null) { setFocusedMarkerIndex(null); return }
+    // 6. Collapse toolbar
+    if (expanded) { handleClose(); return }
+  }, [feedbackListOpen, settingsOpen, active, handleDeactivate, focusedMarkerIndex, expanded, handleClose])
+
+  useKeyboardShortcuts({
+    'mod+shift+f': { handler: toggleCollapsed },
+    'mod+shift+i': { handler: handleToggle, guard: () => expanded },
+    'mod+shift+c': { handler: handleCopy, guard: () => feedbacks.length > 0 },
+    'mod+shift+l': { handler: handleFeedbackListToggle, guard: () => expanded },
+    'mod+shift+,': { handler: handleSettingsToggle, guard: () => expanded },
+    'mod+shift+backspace': { handler: handleDeleteAll, guard: () => feedbacks.length > 0 },
+    'mod+z': { handler: undoDelete, guard: () => canUndo },
+    '[': { handler: focusPrev, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
+    ']': { handler: focusNext, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
+    'enter': { handler: openFocusedEdit, guard: () => focusedMarkerIndex !== null && !isInputFocused() },
+    'escape': { handler: handleEscapeChain },
+  })
+
+  // Scroll focused marker's target element into view
+  useEffect(() => {
+    if (focusedMarkerIndex === null) return
+    const fb = feedbacks[focusedMarkerIndex]
+    if (!fb) return
+    const el = fb.targetElement?.isConnected ? fb.targetElement : document.querySelector(fb.selector) as HTMLElement | null
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusedMarkerIndex, feedbacks])
+
+  // Reset focused marker on collapse or feedbacks length change
+  useEffect(() => {
+    if (collapsed) setFocusedMarkerIndex(null)
+  }, [collapsed])
+
+  useEffect(() => {
+    setFocusedMarkerIndex(null)
+  }, [feedbacks.length])
+
+  const focusedMarkerId = focusedMarkerIndex !== null ? feedbacks[focusedMarkerIndex]?.id : undefined
 
   // Build the pre-configured items
   const items = [
@@ -319,6 +395,9 @@ export function ProUIFeedbacks({
         zIndex={zIndex}
         visible={expanded || active}
         accentColor={accentColor}
+        focusedMarkerId={focusedMarkerId}
+        editTargetId={editTargetId ?? undefined}
+        onEditTriggered={() => setEditTargetId(null)}
         onUpdate={(id, content) => {
           updateFeedback(id, content)
           onFeedbackUpdate?.(id, content)

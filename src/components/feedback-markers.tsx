@@ -4,6 +4,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import type { FeedbackItem, ToolbarTheme } from '../types'
 import {
   getStepMarkerStyle,
+  getFocusedMarkerStyle,
   getStepMarkerTooltipStyle,
   getMarkerTooltipSelectorStyle,
   getOrphanMarkerStyle,
@@ -22,6 +23,12 @@ interface FeedbackMarkersProps {
   /** When false, markers are hidden but feedbacks data is preserved */
   visible?: boolean
   accentColor?: string
+  /** Highlight this marker with a focus ring (set by keyboard navigation) */
+  focusedMarkerId?: string
+  /** Trigger edit popup for this marker (set by Enter key) */
+  editTargetId?: string
+  /** Notify parent that edit was opened (clear editTargetId) */
+  onEditTriggered?: () => void
   onDelete?: (feedback: FeedbackItem) => void
   onUpdate?: (id: string, content: string) => void
 }
@@ -32,7 +39,7 @@ function resolveElement(fb: FeedbackItem): HTMLElement | null {
   return document.querySelector(fb.selector) as HTMLElement | null
 }
 
-export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, onDelete, onUpdate }: FeedbackMarkersProps) {
+export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, focusedMarkerId, editTargetId, onEditTriggered, onDelete, onUpdate }: FeedbackMarkersProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [editingFb, setEditingFb] = useState<FeedbackItem | null>(null)
   const [editContent, setEditContent] = useState('')
@@ -107,6 +114,14 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
     setEditContent(fb.content)
     setHoveredId(null)
   }, [])
+
+  // Trigger edit popup when parent sets editTargetId (Enter key)
+  useEffect(() => {
+    if (!editTargetId) return
+    const fb = feedbacks.find((f) => f.id === editTargetId)
+    if (fb) handleEditOpen(fb)
+    onEditTriggered?.()
+  }, [editTargetId, feedbacks, handleEditOpen, onEditTriggered])
 
   const handleEditSave = useCallback(() => {
     if (!editingFb || !editContent.trim()) return
@@ -187,11 +202,16 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
       {/* Active markers — positioned relative to target elements */}
       {active.map((fb) => {
         const isHovered = hoveredId === fb.id
+        const isFocused = fb.id === focusedMarkerId
         return (
           <div
             key={fb.id}
             data-marker-id={fb.id}
-            style={{ ...getStepMarkerStyle(0, 0, accentColor), pointerEvents: 'auto' }}
+            style={{
+              ...getStepMarkerStyle(0, 0, accentColor),
+              ...(isFocused ? getFocusedMarkerStyle(accentColor) : {}),
+              pointerEvents: 'auto',
+            }}
             onMouseEnter={() => setHoveredId(fb.id)}
             onMouseLeave={() => setHoveredId(null)}
             onClick={() => handleEditOpen(fb)}

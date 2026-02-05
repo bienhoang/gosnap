@@ -403,6 +403,14 @@ export function getMarkerTooltipSelectorStyle(accentColor = DEFAULT_ACCENT_COLOR
   }
 }
 
+export function getFocusedMarkerStyle(accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    transform: 'scale(1.2)',
+    boxShadow: `0 0 0 3px white, 0 0 0 5px ${accentColor}, 0 2px 8px ${hexToRgba(accentColor, 0.4)}`,
+    zIndex: 2,
+  }
+}
+
 // --- Feedback Edit Popup styles ---
 
 export function getEditPopupOverlayStyle(): CSSProperties {

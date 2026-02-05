@@ -27,12 +27,15 @@ function syncIdCounter(items: FeedbackItem[]): void {
 /** Max attempts to resolve DOM elements after SPA navigation */
 const RESOLVE_MAX_RETRIES = 5
 const RESOLVE_INTERVAL_MS = 100
+const UNDO_MAX_DEPTH = 10
 
 export function useFeedbackStore(persistKey?: string) {
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const hydratedRef = useRef(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const serializedRef = useRef<SerializedFeedbackItem[]>([])
+  /** Undo stack — snapshots of feedbacks before delete operations */
+  const undoStackRef = useRef<FeedbackItem[][]>([])
 
   // Two-phase hydration:
   // 1. Load serialized data as placeholders immediately (no DOM queries)
@@ -46,6 +49,7 @@ export function useFeedbackStore(persistKey?: string) {
     }
 
     hydratedRef.current = false
+    undoStackRef.current = []
     const serialized = loadSerializedFeedbacks(persistKey)
     serializedRef.current = serialized
 
@@ -139,15 +143,31 @@ export function useFeedbackStore(persistKey?: string) {
 
   const deleteFeedback = useCallback((id: string) => {
     setFeedbacks((prev) => {
+      undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_MAX_DEPTH - 1)), prev]
       const filtered = prev.filter((f) => f.id !== id)
       return filtered.map((f, i) => ({ ...f, stepNumber: i + 1 }))
     })
   }, [])
 
   const clearFeedbacks = useCallback(() => {
-    setFeedbacks([])
+    setFeedbacks((prev) => {
+      if (prev.length > 0) {
+        undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_MAX_DEPTH - 1)), prev]
+      }
+      return []
+    })
     if (persistKey) clearPersistedFeedbacks(persistKey)
   }, [persistKey])
 
-  return { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks }
+  const undoDelete = useCallback(() => {
+    const stack = undoStackRef.current
+    if (stack.length === 0) return
+    const snapshot = stack[stack.length - 1]
+    undoStackRef.current = stack.slice(0, -1)
+    setFeedbacks(snapshot)
+  }, [])
+
+  const canUndo = undoStackRef.current.length > 0
+
+  return { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo }
 }
