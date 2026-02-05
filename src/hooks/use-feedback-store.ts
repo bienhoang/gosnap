@@ -9,19 +9,11 @@ import {
   clearPersistedFeedbacks,
 } from '../utils/feedback-persistence'
 
-let idCounter = 0
-
 const DEBOUNCE_MS = 300
 
-/** Sync idCounter to avoid collisions with restored items */
-function syncIdCounter(items: FeedbackItem[]): void {
-  for (const item of items) {
-    const match = item.id.match(/^fb-(\d+)-/)
-    if (match) {
-      const num = parseInt(match[1], 10)
-      if (num > idCounter) idCounter = num
-    }
-  }
+/** Generate a unique feedback ID without shared mutable state (SSR-safe) */
+function generateId(): string {
+  return `fb-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
 /** Max attempts to resolve DOM elements after SPA navigation */
@@ -31,6 +23,9 @@ const UNDO_MAX_DEPTH = 10
 
 export function useFeedbackStore(persistKey?: string) {
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
+  /** Ref mirror of feedbacks — used for synchronous reads in addFeedback */
+  const feedbacksRef = useRef<FeedbackItem[]>([])
+  feedbacksRef.current = feedbacks
   const hydratedRef = useRef(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const serializedRef = useRef<SerializedFeedbackItem[]>([])
@@ -61,7 +56,6 @@ export function useFeedbackStore(persistKey?: string) {
 
     // Phase 1: load placeholders (hidden — markers won't render without targetElement)
     const placeholders = loadAsPlaceholders(serialized)
-    syncIdCounter(placeholders)
     setFeedbacks(placeholders)
 
     // Phase 2: resolve DOM elements with retries
@@ -80,7 +74,6 @@ export function useFeedbackStore(persistKey?: string) {
       }
 
       // Final result — either all resolved or max retries reached
-      syncIdCounter(resolved)
       setFeedbacks(resolved)
       hydratedRef.current = true
     }
@@ -112,31 +105,24 @@ export function useFeedbackStore(persistKey?: string) {
     const rect = inspected.element.getBoundingClientRect()
     const offsetX = clickX - rect.left
     const offsetY = clickY - rect.top
-    const now = Date.now()
-    const id = `fb-${++idCounter}-${now}`
+    // Compute stepNumber from ref (synchronous, always up-to-date)
+    const stepNumber = feedbacksRef.current.length + 1
+    const item: FeedbackItem = {
+      id: generateId(),
+      stepNumber,
+      content,
+      selector: inspected.selector,
+      offsetX,
+      offsetY,
+      pageX: clickX + window.scrollX,
+      pageY: clickY + window.scrollY,
+      targetElement: inspected.element,
+      element: inspected,
+      createdAt: Date.now(),
+    }
 
-    // Build item with a placeholder stepNumber; the correct value
-    // is computed inside the updater where we know `prev.length`.
-    let created: FeedbackItem | null = null
-    setFeedbacks((prev) => {
-      created = {
-        id,
-        stepNumber: prev.length + 1,
-        content,
-        selector: inspected.selector,
-        offsetX,
-        offsetY,
-        pageX: clickX + window.scrollX,
-        pageY: clickY + window.scrollY,
-        targetElement: inspected.element,
-        element: inspected,
-        createdAt: now,
-      }
-      return [...prev, created]
-    })
-    // React calls the updater synchronously during setState in event handlers,
-    // so `created` is assigned by the time we return.
-    return created!
+    setFeedbacks((prev) => [...prev, { ...item, stepNumber: prev.length + 1 }])
+    return item
   }, [])
 
   const updateFeedback = useCallback((id: string, content: string) => {

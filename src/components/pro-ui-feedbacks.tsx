@@ -109,10 +109,10 @@ export function ProUIFeedbacks({
   }, [onInspect])
 
   // Smart Inspector hook
+  // Escape handling is centralized in handleEscapeChain via useKeyboardShortcuts
   const { hoveredElement } = useSmartInspector({
     active: active && !pendingFeedback, // pause hover when popover is open
     onInspectClick: handleInspectClick,
-    onDeactivate: handleDeactivate,
     excludeRef: toolbarRef,
   })
 

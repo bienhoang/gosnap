@@ -39,19 +39,14 @@ function saveSettings(settings: PersistedSettings): void {
 }
 
 export function useSettingsStore(defaultTheme: ToolbarTheme) {
-  const [theme, setThemeState] = useState<ToolbarTheme>(() => {
+  // Load persisted settings once on mount (not 3 separate JSON.parse calls)
+  const [{ theme, outputMode, markerColor }, setAll] = useState(() => {
     const saved = loadSettings()
-    return saved.theme ?? defaultTheme
-  })
-
-  const [outputMode, setOutputModeState] = useState<OutputMode>(() => {
-    const saved = loadSettings()
-    return saved.outputMode ?? 'detailed'
-  })
-
-  const [markerColor, setMarkerColorState] = useState<string>(() => {
-    const saved = loadSettings()
-    return saved.markerColor ?? MARKER_COLORS[0].value
+    return {
+      theme: saved.theme ?? defaultTheme,
+      outputMode: saved.outputMode ?? ('detailed' as OutputMode),
+      markerColor: saved.markerColor ?? MARKER_COLORS[0].value,
+    }
   })
 
   // Persist on change
@@ -60,19 +55,19 @@ export function useSettingsStore(defaultTheme: ToolbarTheme) {
   }, [theme, outputMode, markerColor])
 
   const setTheme = useCallback((t: ToolbarTheme) => {
-    setThemeState(t)
+    setAll(prev => ({ ...prev, theme: t }))
   }, [])
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'))
+    setAll(prev => ({ ...prev, theme: prev.theme === 'dark' ? 'light' : 'dark' }))
   }, [])
 
   const setOutputMode = useCallback((mode: OutputMode) => {
-    setOutputModeState(mode)
+    setAll(prev => ({ ...prev, outputMode: mode }))
   }, [])
 
   const setMarkerColor = useCallback((color: string) => {
-    setMarkerColorState(color)
+    setAll(prev => ({ ...prev, markerColor: color }))
   }, [])
 
   return {
