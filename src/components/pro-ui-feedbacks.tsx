@@ -365,6 +365,7 @@ export function ProUIFeedbacks({
               active={item.active}
               accentColor={accentColor}
               tooltipAbove={tooltipAbove}
+              zIndex={zIndex}
               onClick={item.onClick}
             />
           ))}

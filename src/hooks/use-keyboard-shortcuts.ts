@@ -11,7 +11,7 @@ export function isInputFocused(): boolean {
   if (!el) return false
   const tag = el.tagName.toLowerCase()
   return tag === 'input' || tag === 'textarea' || tag === 'select'
-    || el.getAttribute('contenteditable') === 'true'
+    || (el as HTMLElement).isContentEditable
 }
 
 /** Normalize keyboard event to a key string like "mod+shift+f" */

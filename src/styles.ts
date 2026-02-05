@@ -150,11 +150,12 @@ export function getBadgeStyle(theme: ToolbarTheme, accentColor = DEFAULT_ACCENT_
 
 export const DEFAULT_ACCENT_COLOR = '#3b82f6'
 
-/** Convert hex to rgba for translucent fills */
+/** Convert 7-char hex (#rrggbb) to rgba. Falls back to default accent on invalid input. */
 function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
+  const valid = /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : DEFAULT_ACCENT_COLOR
+  const r = parseInt(valid.slice(1, 3), 16)
+  const g = parseInt(valid.slice(3, 5), 16)
+  const b = parseInt(valid.slice(5, 7), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 

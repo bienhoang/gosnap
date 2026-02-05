@@ -20,12 +20,14 @@ interface ToolbarButtonProps {
   accentColor?: string
   /** Show tooltip above (default) or below the button */
   tooltipAbove?: boolean
+  /** Base z-index for layering */
+  zIndex?: number
   onClick: () => void
 }
 
 export function ToolbarButton({
   icon, label, description, shortcut, theme, tabIndex,
-  active, disabled, accentColor, tooltipAbove = true, onClick,
+  active, disabled, accentColor, tooltipAbove = true, zIndex = 9999, onClick,
 }: ToolbarButtonProps) {
   const [hovered, setHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
@@ -82,7 +84,7 @@ export function ToolbarButton({
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
-    zIndex: 99999,
+    zIndex: zIndex + 10,
     textAlign: 'center',
   } : {}
 

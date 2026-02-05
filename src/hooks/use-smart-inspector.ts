@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { InspectedElement, ElementMetadata, ElementAccessibility } from '../types'
 
+/** Escape a string for use in CSS selectors (IDs, classes) */
+function esc(value: string): string {
+  return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(value) : value.replace(/([^\w-])/g, '\\$1')
+}
+
 /** Generate a unique CSS selector for an element by walking up the DOM tree */
 function generateSelector(el: HTMLElement): string {
-  if (el.id) return `#${el.id}`
+  if (el.id) return `#${esc(el.id)}`
 
   const parts: string[] = []
   let current: HTMLElement | null = el
@@ -12,7 +17,7 @@ function generateSelector(el: HTMLElement): string {
     let part = current.tagName.toLowerCase()
 
     if (current.id) {
-      parts.unshift(`#${current.id}`)
+      parts.unshift(`#${esc(current.id)}`)
       break
     }
 
@@ -43,10 +48,10 @@ function generateElementPath(el: HTMLElement): string {
     const classes = Array.from(current.classList)
     const tag = current.tagName.toLowerCase()
     const part = classes.length > 0
-      ? `.${classes.join('.')}` // class-based
+      ? `.${classes.map(esc).join('.')}` // class-based
       : tag // fallback to tag
     parts.unshift(part)
-    if (current.id) { parts[0] = `#${current.id}`; break }
+    if (current.id) { parts[0] = `#${esc(current.id)}`; break }
     current = current.parentElement
   }
 
@@ -61,8 +66,8 @@ function generateFullPath(el: HTMLElement): string {
   while (current && current !== document.documentElement) {
     const tag = current.tagName.toLowerCase()
     const classes = Array.from(current.classList)
-    const suffix = classes.length > 0 ? `.${classes.join('.')}` : ''
-    const idSuffix = current.id ? `#${current.id}` : ''
+    const suffix = classes.length > 0 ? `.${classes.map(esc).join('.')}` : ''
+    const idSuffix = current.id ? `#${esc(current.id)}` : ''
     parts.unshift(`${tag}${idSuffix}${suffix}`)
     current = current.parentElement
   }
@@ -166,7 +171,7 @@ function buildInspectedElement(el: HTMLElement): InspectedElement {
   return {
     element: el,
     tagName: el.tagName.toLowerCase(),
-    className: el.className,
+    className: typeof el.className === 'string' ? el.className : (el.className as unknown as SVGAnimatedString)?.baseVal ?? '',
     id: el.id,
     selector: generateSelector(el),
     rect,

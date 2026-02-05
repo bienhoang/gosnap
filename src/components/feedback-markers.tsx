@@ -36,7 +36,11 @@ interface FeedbackMarkersProps {
 /** Resolve the target element — use stored ref, fall back to querySelector */
 function resolveElement(fb: FeedbackItem): HTMLElement | null {
   if (fb.targetElement?.isConnected) return fb.targetElement
-  return document.querySelector(fb.selector) as HTMLElement | null
+  try {
+    return document.querySelector(fb.selector) as HTMLElement | null
+  } catch {
+    return null
+  }
 }
 
 export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, focusedMarkerId, editTargetId, onEditTriggered, onDelete, onUpdate }: FeedbackMarkersProps) {

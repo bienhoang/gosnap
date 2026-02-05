@@ -154,9 +154,18 @@ function emptyMetadata(): ElementMetadata {
   }
 }
 
+/** Safe querySelector that returns null on invalid selectors */
+function safeQuerySelector(selector: string): HTMLElement | null {
+  try {
+    return document.querySelector(selector) as HTMLElement | null
+  } catch {
+    return null
+  }
+}
+
 /** Resolve a serialized item against the live DOM */
 function resolveSerializedItem(item: SerializedFeedbackItem): FeedbackItem {
-  const el = document.querySelector(item.selector) as HTMLElement | null
+  const el = safeQuerySelector(item.selector)
 
   if (el) {
     const rect = el.getBoundingClientRect()
