@@ -308,6 +308,31 @@ export function getStepMarkerStyle(x: number, y: number): CSSProperties {
   }
 }
 
+export function getOrphanMarkerStyle(index: number): CSSProperties {
+  return {
+    position: 'fixed',
+    left: 20,
+    bottom: 80 + index * 32,
+    width: 24,
+    height: 24,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    color: '#ef4444',
+    border: '2px dashed #ef4444',
+    borderRadius: '50%',
+    fontSize: 11,
+    fontWeight: 700,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    opacity: 0.6,
+    cursor: 'pointer',
+    userSelect: 'none',
+    transition: 'transform 150ms ease, opacity 150ms ease',
+    zIndex: 1,
+  }
+}
+
 export function getStepMarkerTooltipStyle(theme: ToolbarTheme): CSSProperties {
   const colors = THEME_MAP[theme]
   return {
