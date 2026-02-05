@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-02-06
+
+### Fixed
+
+- **SSR-safe ID generation** — replaced shared module-level `idCounter` with `Date.now() + Math.random()` to prevent ID collisions across instances and SSR requests
+- **`addFeedback` return value** — added `feedbacksRef` mirror for synchronous `stepNumber` computation; returned item now has correct step number instead of stale value
+- **Centralized Escape handling** — removed duplicate Escape listener from inspector hook; all Escape logic now flows through `handleEscapeChain` for consistent one-press-at-a-time dismissal
+- **Consistent element descriptions** — persistence layer now uses the shared metadata utility (24 tag names) instead of its own incomplete copy (8 tag names)
+
+### Changed
+
+- **Extracted `element-metadata.ts`** — shared utility for selector generation, metadata collection, and element inspection; used by both inspector hook and persistence layer (DRY)
+- **Settings store initialization** — consolidated 3 separate `localStorage.getItem` + `JSON.parse` calls into a single load on mount
+- Removed deprecated `rehydrateFeedbacks` export and unused `emptyMetadata` helper
+
 ## [0.2.0] - 2026-02-06
 
 ### Added
