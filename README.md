@@ -128,9 +128,9 @@ interface FeedbackItem {
   element: InspectedElement | null
   createdAt: number            // timestamp
   orphan?: boolean             // true when element not found after reload
-  groupId?: string             // shared ID for area-selected items
-  areaData?: AreaData          // area metadata (first item in group only)
+  areaData?: AreaData          // area metadata for multi-select
   isAreaOnly?: boolean         // true if annotation on empty space
+  elements?: InspectedElement[] // all elements in multi-select group
 }
 
 interface AreaData {
@@ -167,16 +167,16 @@ Drag to select multiple elements and annotate them as a group:
 4. **Submit** — a single marker appears at the area center showing element count
 
 **Features:**
-- Marker shows element count badge (e.g., "3")
-- Hover marker to see all included elements
-- Click to edit — changes apply to entire group
-- Delete removes all elements in the group
-- Partial orphan support: if some elements disappear after reload, marker shows "2/3"
-- Empty space annotation: drag on empty area to leave contextual feedback
+- Marker shows step number (same as single-element markers)
+- Hover marker to see element count and tag names
+- Click to edit — shows collapsible element list in edit popup
+- Delete removes the entire group as one feedback item
+- Partial orphan support: elements that disappear after reload are excluded from the resolved list
+- Empty space annotation: drag on empty area to leave contextual feedback (no element data)
 
 **Limits:**
 - Max 50 elements per selection (for performance)
-- All elements share same feedback text
+- All elements share the same feedback text
 
 ## Keyboard Shortcuts
 

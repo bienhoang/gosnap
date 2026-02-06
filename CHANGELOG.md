@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-06
+
+### Added
+
+- **Drag-to-select multi-element feedback** — click for single element, drag for area selection
+  - Marker positioned at center of drag area, shows step number
+  - Single feedback item with `elements` array containing all selected elements
+  - Hover tooltip displays element count and tag names
+  - Edit popup shows collapsible element list
+  - Empty space annotation: drag on empty area to leave contextual feedback (isAreaOnly)
+- **Element intersection detection** — TreeWalker-based DOM traversal finds all elements within drag area (max 50)
+- **Area highlight overlay** — visual feedback during drag showing selection bounds
+- **New types**: `AreaData`, `AreaBounds`, `InspectAreaEvent`, `SerializedElement`
+- **FeedbackItem extensions**: `areaData`, `isAreaOnly`, `elements` optional fields
+
+### Changed
+
+- Copy/export format: multi-select outputs single grouped feedback with element descriptions
+- Persistence: serialize/deserialize `elements` array for multi-select items
+- Two-phase hydration: resolve each element independently on reload (partial orphan support)
+
 ## [0.2.1] - 2026-02-06
 
 ### Fixed
