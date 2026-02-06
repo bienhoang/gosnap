@@ -128,13 +128,24 @@ interface FeedbackItem {
   element: InspectedElement | null
   createdAt: number            // timestamp
   orphan?: boolean             // true when element not found after reload
+  groupId?: string             // shared ID for area-selected items
+  areaData?: AreaData          // area metadata (first item in group only)
+  isAreaOnly?: boolean         // true if annotation on empty space
+}
+
+interface AreaData {
+  centerX: number              // absolute page X of area center
+  centerY: number              // absolute page Y of area center
+  width: number                // area width in pixels
+  height: number               // area height in pixels
+  elementCount: number         // total elements in group
 }
 
 type ToolbarPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 type ToolbarTheme = 'dark' | 'light'
 ```
 
-All types are exported from the package entry point, including `ElementMetadata`, `ElementAccessibility`, and `SerializedFeedbackItem`.
+All types are exported from the package entry point, including `ElementMetadata`, `ElementAccessibility`, `SerializedFeedbackItem`, `AreaData`, `AreaBounds`, and `InspectAreaEvent`.
 
 ## How It Works
 
@@ -143,8 +154,29 @@ All types are exported from the package entry point, including `ElementMetadata`
 3. **Click** an element to open a feedback popover anchored at the click position
 4. **Type** your note and press <kbd>Cmd</kbd>+<kbd>Enter</kbd> (or click Submit)
 5. A **numbered marker** appears pinned to that element — it follows scroll and resize
-6. Hover a marker to preview the note, click it to delete
+6. Hover a marker to preview the note, click it to edit
 7. **Stop** the inspector or **Close** the toolbar when done
+
+### Area Selection (Multi-Element)
+
+Drag to select multiple elements and annotate them as a group:
+
+1. **Start** the inspector
+2. **Drag** across multiple elements (or empty space)
+3. **Release** to open feedback popover
+4. **Submit** — a single marker appears at the area center showing element count
+
+**Features:**
+- Marker shows element count badge (e.g., "3")
+- Hover marker to see all included elements
+- Click to edit — changes apply to entire group
+- Delete removes all elements in the group
+- Partial orphan support: if some elements disappear after reload, marker shows "2/3"
+- Empty space annotation: drag on empty area to leave contextual feedback
+
+**Limits:**
+- Max 50 elements per selection (for performance)
+- All elements share same feedback text
 
 ## Keyboard Shortcuts
 

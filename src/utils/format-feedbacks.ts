@@ -1,4 +1,4 @@
-import type { FeedbackItem } from '../types'
+import type { FeedbackItem, AreaData, InspectedElement } from '../types'
 
 /** Collect current environment info */
 function getEnvironment(): {
@@ -22,11 +22,247 @@ function formatStyles(styles: Record<string, string>): string {
   return Object.entries(styles)
     .filter(([, v]) => v)
     .map(([k, v]) => {
-      // Convert camelCase to kebab-case for display
       const prop = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
       return `${prop}: ${v}`
     })
     .join('; ')
+}
+
+/** Check if feedback is multi-select */
+function isMultiSelect(fb: FeedbackItem): boolean {
+  return !!(fb.elements && fb.elements.length > 0) || !!fb.areaData
+}
+
+/** Build element description list for multi-select header */
+function buildElementDescriptions(elements: InspectedElement[], maxItems = 5): string {
+  const descriptions: string[] = []
+
+  for (let i = 0; i < Math.min(elements.length, maxItems); i++) {
+    const el = elements[i]
+    const desc = el.metadata?.elementDescription ?? el.selector.split('>').pop()?.trim() ?? 'element'
+    descriptions.push(desc)
+  }
+
+  if (elements.length > maxItems) {
+    descriptions.push(`+${elements.length - maxItems} more`)
+  }
+
+  return descriptions.join(', ')
+}
+
+/** Get common CSS classes across elements */
+function getCommonClasses(elements: InspectedElement[]): string[] {
+  const classCounts = new Map<string, number>()
+
+  for (const el of elements) {
+    const classes = el.metadata?.cssClasses ?? []
+    for (const cls of classes) {
+      classCounts.set(cls, (classCounts.get(cls) || 0) + 1)
+    }
+  }
+
+  const threshold = Math.ceil(elements.length / 2)
+  return Array.from(classCounts.entries())
+    .filter(([, count]) => count >= threshold)
+    .map(([cls]) => cls)
+    .slice(0, 3)
+}
+
+/** Get context text from first element */
+function getContextText(elements: InspectedElement[]): string {
+  for (const el of elements) {
+    const m = el.metadata
+    if (m?.nearbyText) return m.nearbyText
+    if (m?.elementDescription) {
+      const match = m.elementDescription.match(/"([^"]+)"/)
+      if (match) return match[1].slice(0, 40)
+    }
+  }
+  return ''
+}
+
+// =============================================================================
+// DETAILED FORMAT
+// =============================================================================
+
+/** Format a single-element feedback (detailed mode) */
+function formatSingleDetailed(fb: FeedbackItem, lines: string[]): void {
+  const m = fb.element?.metadata
+  const bb = m?.boundingBox
+  const desc = m?.elementDescription ?? fb.selector
+
+  lines.push(`### ${fb.stepNumber}. ${desc}`)
+
+  if (fb.orphan) {
+    lines.push(`**Status:** Orphaned (element not found)`)
+    lines.push(`**Last Selector:** \`${fb.selector}\``)
+  } else {
+    if (m?.elementPath) lines.push(`**Location:** ${m.elementPath}`)
+    if (bb) lines.push(`**Position:** ${bb.x}px, ${bb.y}px (${bb.width}×${bb.height}px)`)
+  }
+
+  lines.push(`**Feedback:** ${fb.content}`)
+}
+
+/** Format a multi-select feedback (detailed mode) */
+function formatMultiSelectDetailed(fb: FeedbackItem, lines: string[]): void {
+  const elements = fb.elements ?? []
+  const elementCount = fb.areaData?.elementCount ?? elements.length
+  const areaData = fb.areaData
+
+  if (fb.isAreaOnly) {
+    lines.push(`### ${fb.stepNumber}. Area Annotation (empty space)`)
+  } else {
+    const elementDescs = buildElementDescriptions(elements)
+    lines.push(`### ${fb.stepNumber}. ${elementCount} elements: ${elementDescs}`)
+  }
+
+  lines.push(`**Location:** multi-select`)
+
+  const commonClasses = getCommonClasses(elements)
+  if (commonClasses.length > 0) {
+    lines.push(`**Classes:** ${commonClasses.join(', ')}`)
+  }
+
+  if (areaData) {
+    const x = Math.round(areaData.centerX - areaData.width / 2)
+    const y = Math.round(areaData.centerY - areaData.height / 2)
+    lines.push(`**Position:** ${x}px, ${y}px (${areaData.width}×${areaData.height}px)`)
+  }
+
+  const context = getContextText(elements)
+  if (context) {
+    lines.push(`**Context:** ${context}`)
+  }
+
+  lines.push(`**Feedback:** ${fb.content}`)
+
+  if (fb.isAreaOnly) {
+    lines.push('')
+    lines.push(`_Note: This annotation targets empty space, not specific elements._`)
+  }
+}
+
+/**
+ * Detailed format — lighter markdown with viewport,
+ * location (elementPath), position, feedback.
+ */
+export function formatDetailed(feedbacks: FeedbackItem[]): string {
+  const pathname = window.location.pathname
+  const lines: string[] = []
+
+  lines.push(`## Page Feedback: ${pathname}`)
+  lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
+
+  // Sort by step number
+  const sorted = [...feedbacks].sort((a, b) => a.stepNumber - b.stepNumber)
+
+  for (const fb of sorted) {
+    lines.push('')
+    if (isMultiSelect(fb)) {
+      formatMultiSelectDetailed(fb, lines)
+    } else {
+      formatSingleDetailed(fb, lines)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+/** Detailed format for a single feedback item */
+export function formatDetailedSingle(fb: FeedbackItem): string {
+  const lines: string[] = []
+
+  lines.push(`## Page: ${window.location.pathname}`)
+  lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
+  lines.push('')
+
+  if (isMultiSelect(fb)) {
+    formatMultiSelectDetailed(fb, lines)
+  } else {
+    formatSingleDetailed(fb, lines)
+  }
+
+  return lines.join('\n')
+}
+
+// =============================================================================
+// DEBUG FORMAT
+// =============================================================================
+
+/** Format a single-element feedback (debug mode) */
+function formatSingleDebug(fb: FeedbackItem, lines: string[]): void {
+  const m = fb.element?.metadata
+  const bb = m?.boundingBox
+  const desc = m?.elementDescription ?? fb.selector
+
+  lines.push(`### ${fb.stepNumber}. ${desc}`)
+
+  if (fb.orphan) {
+    lines.push(`**Status:** Orphaned`)
+    lines.push(`**Last Known Selector:** ${fb.selector}`)
+    lines.push(`**Feedback:** ${fb.content}`)
+    return
+  }
+
+  if (m?.fullPath) lines.push(`**Full DOM Path:** ${m.fullPath}`)
+
+  if (bb) {
+    lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
+  }
+
+  if (bb && bb.width > 0) {
+    const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
+    const pxFromTop = Math.round(bb.y + fb.offsetY)
+    lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
+  }
+
+  if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
+    lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
+  }
+
+  if (m?.nearbyElements) lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
+
+  lines.push(`**Feedback:** ${fb.content}`)
+}
+
+/** Format a multi-select feedback (debug mode) */
+function formatMultiSelectDebug(fb: FeedbackItem, lines: string[]): void {
+  const elements = fb.elements ?? []
+  const elementCount = fb.areaData?.elementCount ?? elements.length
+  const areaData = fb.areaData
+
+  if (fb.isAreaOnly) {
+    lines.push(`### ${fb.stepNumber}. Area Annotation (empty space)`)
+  } else {
+    const elementDescs = buildElementDescriptions(elements)
+    lines.push(`### ${fb.stepNumber}. ${elementCount} elements: ${elementDescs}`)
+  }
+
+  lines.push(`**Location:** multi-select`)
+
+  const commonClasses = getCommonClasses(elements)
+  if (commonClasses.length > 0) {
+    lines.push(`**Classes:** ${commonClasses.join(', ')}`)
+  }
+
+  if (areaData) {
+    const x = Math.round(areaData.centerX - areaData.width / 2)
+    const y = Math.round(areaData.centerY - areaData.height / 2)
+    lines.push(`**Position:** ${x}px, ${y}px (${areaData.width}×${areaData.height}px)`)
+  }
+
+  const context = getContextText(elements)
+  if (context) {
+    lines.push(`**Context:** ${context}`)
+  }
+
+  lines.push(`**Feedback:** ${fb.content}`)
+
+  if (fb.isAreaOnly) {
+    lines.push('')
+    lines.push(`_Note: Empty space annotation - no element data._`)
+  }
 }
 
 /**
@@ -49,44 +285,16 @@ export function formatDebug(feedbacks: FeedbackItem[]): string {
   lines.push('')
   lines.push('---')
 
-  for (const fb of feedbacks) {
-    const m = fb.element?.metadata
-    const bb = m?.boundingBox
+  // Sort by step number
+  const sorted = [...feedbacks].sort((a, b) => a.stepNumber - b.stepNumber)
 
+  for (const fb of sorted) {
     lines.push('')
-    // Heading: step + element description
-    const desc = m?.elementDescription ?? fb.selector
-    lines.push(`### ${fb.stepNumber}. ${desc}`)
-
-    // Full DOM path
-    if (m?.fullPath) {
-      lines.push(`**Full DOM Path:** ${m.fullPath}`)
+    if (isMultiSelect(fb)) {
+      formatMultiSelectDebug(fb, lines)
+    } else {
+      formatSingleDebug(fb, lines)
     }
-
-    // Position: x, y (width×height)
-    if (bb) {
-      lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
-    }
-
-    // Annotation at: % from left, px from top
-    if (bb && bb.width > 0) {
-      const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
-      const pxFromTop = Math.round(bb.y + fb.offsetY)
-      lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
-    }
-
-    // Computed styles
-    if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
-      lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
-    }
-
-    // Nearby elements
-    if (m?.nearbyElements) {
-      lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
-    }
-
-    // Feedback content
-    lines.push(`**Feedback:** ${fb.content}`)
   }
 
   return lines.join('\n')
@@ -95,8 +303,6 @@ export function formatDebug(feedbacks: FeedbackItem[]): string {
 /** Debug format for a single feedback item */
 export function formatDebugSingle(fb: FeedbackItem): string {
   const env = getEnvironment()
-  const m = fb.element?.metadata
-  const bb = m?.boundingBox
   const lines: string[] = []
 
   lines.push(`## Page: ${window.location.pathname}`)
@@ -108,76 +314,10 @@ export function formatDebugSingle(fb: FeedbackItem): string {
   lines.push(`- Device Pixel Ratio: ${env.dpr}`)
   lines.push('')
 
-  const desc = m?.elementDescription ?? fb.selector
-  lines.push(`### ${fb.stepNumber}. ${desc}`)
-
-  if (m?.fullPath) lines.push(`**Full DOM Path:** ${m.fullPath}`)
-  if (bb) lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
-  if (bb && bb.width > 0) {
-    const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
-    const pxFromTop = Math.round(bb.y + fb.offsetY)
-    lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
-  }
-  if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
-    lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
-  }
-  if (m?.nearbyElements) lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
-  lines.push(`**Feedback:** ${fb.content}`)
-
-  return lines.join('\n')
-}
-
-/** Detailed format for a single feedback item */
-export function formatDetailedSingle(fb: FeedbackItem): string {
-  const m = fb.element?.metadata
-  const bb = m?.boundingBox
-  const lines: string[] = []
-
-  lines.push(`## Page: ${window.location.pathname}`)
-  lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
-  lines.push('')
-
-  const desc = m?.elementDescription ?? fb.selector
-  lines.push(`### ${fb.stepNumber}. ${desc}`)
-  if (m?.elementPath) lines.push(`**Location:** ${m.elementPath}`)
-  if (bb) lines.push(`**Position:** ${bb.x}px, ${bb.y}px (${bb.width}×${bb.height}px)`)
-  lines.push(`**Feedback:** ${fb.content}`)
-
-  return lines.join('\n')
-}
-
-/**
- * Detailed format — lighter markdown with viewport,
- * location (elementPath), position, feedback.
- */
-export function formatDetailed(feedbacks: FeedbackItem[]): string {
-  const pathname = window.location.pathname
-  const lines: string[] = []
-
-  lines.push(`## Page Feedback: ${pathname}`)
-  lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
-
-  for (const fb of feedbacks) {
-    const m = fb.element?.metadata
-    const bb = m?.boundingBox
-
-    lines.push('')
-    // Heading: step + element description
-    const desc = m?.elementDescription ?? fb.selector
-    lines.push(`### ${fb.stepNumber}. ${desc}`)
-
-    // Location: elementPath (short class-based)
-    if (m?.elementPath) {
-      lines.push(`**Location:** ${m.elementPath}`)
-    }
-
-    // Position
-    if (bb) {
-      lines.push(`**Position:** ${bb.x}px, ${bb.y}px (${bb.width}×${bb.height}px)`)
-    }
-
-    // Feedback content
-    lines.push(`**Feedback:** ${fb.content}`)
+  if (isMultiSelect(fb)) {
+    formatMultiSelectDebug(fb, lines)
+  } else {
+    formatSingleDebug(fb, lines)
   }
 
   return lines.join('\n')

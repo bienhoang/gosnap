@@ -47,6 +47,7 @@ export function SettingsPopup({
     position: 'fixed',
     width: toolbarRect ? toolbarRect.width : 280,
     padding: 14,
+    boxSizing: 'border-box',
     backgroundColor: bg,
     border: `1px solid ${border}`,
     borderRadius: 12,

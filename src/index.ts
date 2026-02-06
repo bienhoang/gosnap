@@ -8,4 +8,8 @@ export type {
   SerializedFeedbackItem,
   ToolbarPosition,
   ToolbarTheme,
+  // Area selection types
+  AreaData,
+  AreaBounds,
+  InspectAreaEvent,
 } from './types'

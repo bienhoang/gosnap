@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { FeedbackItem, InspectedElement } from '../types'
+import type { FeedbackItem, InspectedElement, AreaData } from '../types'
 import type { SerializedFeedbackItem } from '../types'
 import {
   saveFeedbacks,
@@ -125,10 +125,51 @@ export function useFeedbackStore(persistKey?: string) {
     return item
   }, [])
 
+  /** Add feedback for area (drag) selection - creates ONE item with multiple elements */
+  const addGroupFeedback = useCallback((
+    content: string,
+    area: { x: number; y: number; width: number; height: number },
+    elements: InspectedElement[],
+  ): FeedbackItem => {
+    // Calculate area center (page coordinates)
+    const centerX = area.x + area.width / 2 + window.scrollX
+    const centerY = area.y + area.height / 2 + window.scrollY
+
+    const areaData: AreaData = {
+      centerX,
+      centerY,
+      width: area.width,
+      height: area.height,
+      elementCount: elements.length,
+    }
+
+    const createdAt = Date.now()
+    const isAreaOnly = elements.length === 0
+
+    // Create ONE feedback item (single or multi-element)
+    const item: FeedbackItem = {
+      id: generateId(),
+      stepNumber: feedbacksRef.current.length + 1,
+      content,
+      selector: elements[0]?.selector ?? '', // First element's selector for reference
+      offsetX: 0,
+      offsetY: 0,
+      pageX: centerX,
+      pageY: centerY,
+      targetElement: null, // Group has no single target
+      element: null, // Group has no single element
+      createdAt,
+      areaData,
+      isAreaOnly,
+      elements: isAreaOnly ? undefined : elements, // Store all elements
+    }
+
+    setFeedbacks((prev) => [...prev, { ...item, stepNumber: prev.length + 1 }])
+    return item
+  }, [])
+
   const updateFeedback = useCallback((id: string, content: string) => {
-    setFeedbacks((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, content } : f)),
-    )
+    setFeedbacks((prev) => prev.map((f) => (f.id === id ? { ...f, content } : f)))
   }, [])
 
   const deleteFeedback = useCallback((id: string) => {
@@ -159,5 +200,5 @@ export function useFeedbackStore(persistKey?: string) {
 
   const canUndo = undoStackRef.current.length > 0
 
-  return { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo }
+  return { feedbacks, addFeedback, addGroupFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo }
 }

@@ -45,7 +45,7 @@ export function getToolbarStyle(theme: ToolbarTheme, expanded: boolean): CSSProp
   return {
     display: 'flex',
     alignItems: 'center',
-    gap: 2,
+    gap: expanded ? 2 : 0,
     padding: expanded ? '6px 8px' : '6px',
     backgroundColor: colors.bg,
     borderRadius: expanded ? 12 : 20,
@@ -486,4 +486,140 @@ export function getEditPopupBtnStyle(theme: ToolbarTheme, variant: 'primary' | '
   }
   // ghost
   return { ...base, backgroundColor: 'transparent', color: colors.text, opacity: 0.7 }
+}
+
+// --- Drag Area Selection styles ---
+
+export function getDragSelectionRectStyle(x: number, y: number, w: number, h: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'absolute',
+    left: x,
+    top: y,
+    width: w,
+    height: h,
+    border: `2px dashed ${accentColor}`,
+    backgroundColor: hexToRgba(accentColor, 0.06),
+    borderRadius: 4,
+    pointerEvents: 'none',
+  }
+}
+
+export function getDragElementHighlightStyle(rect: DOMRect, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'fixed',
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    backgroundColor: hexToRgba(accentColor, 0.15),
+    border: `1px solid ${accentColor}`,
+    borderRadius: 2,
+    pointerEvents: 'none',
+  }
+}
+
+export function getDragCountBadgeStyle(x: number, y: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'absolute',
+    left: x + 8,
+    top: y,
+    backgroundColor: accentColor,
+    color: '#ffffff',
+    padding: '3px 10px',
+    borderRadius: 12,
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+  }
+}
+
+// --- Group Marker styles ---
+
+export function getGroupMarkerStyle(left: number, top: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'fixed',
+    left,
+    top,
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    backgroundColor: accentColor,
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 700,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    cursor: 'pointer',
+    boxShadow: `0 2px 8px ${hexToRgba(accentColor, 0.4)}`,
+    transition: 'transform 150ms ease',
+    userSelect: 'none',
+    zIndex: 1,
+  }
+}
+
+export function getGroupOrphanBadgeStyle(): CSSProperties {
+  return {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    fontSize: 9,
+    padding: '1px 4px',
+    borderRadius: 8,
+    fontWeight: 500,
+    pointerEvents: 'none',
+  }
+}
+
+export function getGroupTooltipStyle(theme: ToolbarTheme): CSSProperties {
+  const colors = THEME_MAP[theme]
+  return {
+    position: 'absolute',
+    left: 36,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    minWidth: 200,
+    maxWidth: 300,
+    padding: 12,
+    backgroundColor: colors.bg,
+    color: colors.text,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 8,
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+    fontSize: 13,
+    lineHeight: 1.5,
+    whiteSpace: 'normal',
+    zIndex: 1,
+    pointerEvents: 'none',
+  }
+}
+
+export function getAreaOnlyMarkerStyle(left: number, top: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'fixed',
+    left,
+    top,
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    backgroundColor: 'transparent',
+    color: accentColor,
+    border: `2px dashed ${accentColor}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 700,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    cursor: 'pointer',
+    transition: 'transform 150ms ease',
+    userSelect: 'none',
+    zIndex: 1,
+  }
 }

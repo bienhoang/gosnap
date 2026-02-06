@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Menu, Play, Pause, MessageSquare, Copy, Trash2, Settings, X } from 'lucide-react'
 import type { ProUIFeedbacksProps, InspectedElement } from '../types'
-import type { InspectClickEvent } from '../hooks/use-smart-inspector'
+import type { InspectClickEvent, InspectAreaEvent, DragArea } from '../hooks/use-smart-inspector'
 import {
   getContainerStyle,
   getToolbarStyle,
@@ -34,6 +34,11 @@ interface PendingFeedback {
   element: InspectedElement
 }
 
+interface PendingAreaFeedback {
+  area: DragArea
+  elements: InspectedElement[]
+}
+
 export function ProUIFeedbacks({
   onToggle,
   onInspect,
@@ -61,12 +66,13 @@ export function ProUIFeedbacks({
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null)
+  const [pendingAreaFeedback, setPendingAreaFeedback] = useState<PendingAreaFeedback | null>(null)
   const [focusedMarkerIndex, setFocusedMarkerIndex] = useState<number | null>(null)
   const [editTargetId, setEditTargetId] = useState<string | null>(null)
 
   const pathname = usePathname()
   const persistKey = persist ? buildPersistKey(persist, pathname) : undefined
-  const { feedbacks, addFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo } = useFeedbackStore(persistKey)
+  const { feedbacks, addFeedback, addGroupFeedback, updateFeedback, deleteFeedback, clearFeedbacks, undoDelete, canUndo } = useFeedbackStore(persistKey)
   const settings = useSettingsStore(themeProp)
   const theme = settings.theme
   const accentColor = settings.markerColor
@@ -80,6 +86,7 @@ export function ProUIFeedbacks({
       prevPathnameRef.current = pathname
       setActive(false)
       setPendingFeedback(null)
+      setPendingAreaFeedback(null)
       setSettingsOpen(false)
       setFeedbackListOpen(false)
       setFocusedMarkerIndex(null)
@@ -95,6 +102,7 @@ export function ProUIFeedbacks({
   const handleDeactivate = useCallback(() => {
     setActive(false)
     setPendingFeedback(null)
+    setPendingAreaFeedback(null)
     onToggle?.(false)
   }, [onToggle])
 
@@ -108,11 +116,20 @@ export function ProUIFeedbacks({
     })
   }, [onInspect])
 
+  const handleInspectArea = useCallback((event: InspectAreaEvent) => {
+    // Store area selection for popover
+    setPendingAreaFeedback({
+      area: event.area,
+      elements: event.elements,
+    })
+  }, [])
+
   // Smart Inspector hook
   // Escape handling is centralized in handleEscapeChain via useKeyboardShortcuts
-  const { hoveredElement } = useSmartInspector({
-    active: active && !pendingFeedback, // pause hover when popover is open
+  const { hoveredElement, dragArea } = useSmartInspector({
+    active: active && !pendingFeedback && !pendingAreaFeedback, // pause hover when popover is open
     onInspectClick: handleInspectClick,
+    onInspectArea: handleInspectArea,
     excludeRef: toolbarRef,
   })
 
@@ -127,6 +144,18 @@ export function ProUIFeedbacks({
     setPendingFeedback(null)
   }, [])
 
+  /** Submit feedback for area (drag) selection */
+  const handleAreaFeedbackSubmit = useCallback((content: string) => {
+    if (!pendingAreaFeedback) return
+    const item = addGroupFeedback(content, pendingAreaFeedback.area, pendingAreaFeedback.elements)
+    onFeedbackSubmit?.(item)
+    setPendingAreaFeedback(null)
+  }, [pendingAreaFeedback, addGroupFeedback, onFeedbackSubmit])
+
+  const handleAreaFeedbackClose = useCallback(() => {
+    setPendingAreaFeedback(null)
+  }, [])
+
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
       const next = !prev
@@ -139,7 +168,10 @@ export function ProUIFeedbacks({
   const handleToggle = useCallback(() => {
     setActive((prev) => {
       const next = !prev
-      if (!next) setPendingFeedback(null)
+      if (!next) {
+        setPendingFeedback(null)
+        setPendingAreaFeedback(null)
+      }
       onToggle?.(next)
       return next
     })
@@ -149,6 +181,7 @@ export function ProUIFeedbacks({
     if (active) {
       setActive(false)
       setPendingFeedback(null)
+      setPendingAreaFeedback(null)
       onToggle?.(false)
     }
     setCollapsed(true)
@@ -379,8 +412,8 @@ export function ProUIFeedbacks({
   return (
     <>
       {createPortal(toolbar, document.body)}
-      {active && !pendingFeedback && (
-        <SmartInspectorOverlay hoveredElement={hoveredElement} theme={theme} zIndex={zIndex} accentColor={accentColor} />
+      {active && !pendingFeedback && !pendingAreaFeedback && (
+        <SmartInspectorOverlay hoveredElement={hoveredElement} dragArea={dragArea} theme={theme} zIndex={zIndex} accentColor={accentColor} />
       )}
       {pendingFeedback && (
         <FeedbackPopover
@@ -393,6 +426,19 @@ export function ProUIFeedbacks({
           accentColor={accentColor}
           onSubmit={handleFeedbackSubmit}
           onClose={handleFeedbackClose}
+        />
+      )}
+      {pendingAreaFeedback && (
+        <FeedbackPopover
+          x={pendingAreaFeedback.area.x + pendingAreaFeedback.area.width / 2}
+          y={pendingAreaFeedback.area.y + pendingAreaFeedback.area.height / 2}
+          elements={pendingAreaFeedback.elements}
+          theme={theme}
+          zIndex={zIndex}
+          stepNumber={feedbacks.length + 1}
+          accentColor={accentColor}
+          onSubmit={handleAreaFeedbackSubmit}
+          onClose={handleAreaFeedbackClose}
         />
       )}
       <FeedbackMarkers

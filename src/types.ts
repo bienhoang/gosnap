@@ -49,7 +49,37 @@ export interface InspectedElement {
   metadata: ElementMetadata
 }
 
-/** A single feedback annotation tied to a DOM element */
+/** Metadata for area (drag) selection */
+export interface AreaData {
+  /** Absolute page X coordinate of area center */
+  centerX: number
+  /** Absolute page Y coordinate of area center */
+  centerY: number
+  /** Area width in pixels */
+  width: number
+  /** Area height in pixels */
+  height: number
+  /** Total elements count in group */
+  elementCount: number
+}
+
+/** Area bounds in viewport coordinates */
+export interface AreaBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** Event emitted when area selection completes (drag-to-select) */
+export interface InspectAreaEvent {
+  /** Normalized area bounds (x/y = top-left) in viewport coords */
+  area: AreaBounds
+  /** Elements fully or partially within the area */
+  elements: InspectedElement[]
+}
+
+/** A single feedback annotation tied to a DOM element or group of elements */
 export interface FeedbackItem {
   id: string
   /** Step number (1-based) */
@@ -61,15 +91,32 @@ export interface FeedbackItem {
   /** Offset from target element's top-left corner */
   offsetX: number
   offsetY: number
-  /** Absolute page coordinates of the click */
+  /** Absolute page coordinates of the click/area center */
   pageX: number
   pageY: number
-  /** The target DOM element reference (null when orphaned after reload) */
+  /** The target DOM element reference (null when orphaned after reload or group) */
   targetElement: HTMLElement | null
-  /** Inspected element metadata at creation time (null when orphaned) */
+  /** Inspected element metadata at creation time (null when orphaned or group) */
   element: InspectedElement | null
   createdAt: number
   /** True when the target element could not be found after rehydration */
+  orphan?: boolean
+  /** Area metadata for multi-select (undefined for single-element) */
+  areaData?: AreaData
+  /** True if annotation on empty space (no elements) */
+  isAreaOnly?: boolean
+  /** Array of elements for multi-select (undefined for single-element) */
+  elements?: InspectedElement[]
+}
+
+/** Serialized element for multi-select persistence */
+export interface SerializedElement {
+  selector: string
+  tagName: string
+  className: string
+  elementId: string
+  metadata?: ElementMetadata
+  /** True when element not found on reload */
   orphan?: boolean
 }
 
@@ -89,6 +136,12 @@ export interface SerializedFeedbackItem {
   elementId: string
   /** Rich element metadata (persisted) */
   metadata?: ElementMetadata
+  /** Area data for multi-select */
+  areaData?: AreaData
+  /** Empty space annotation flag */
+  isAreaOnly?: boolean
+  /** Serialized elements for multi-select */
+  elements?: SerializedElement[]
 }
 
 export interface ProUIFeedbacksProps {

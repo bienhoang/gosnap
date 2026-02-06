@@ -13,7 +13,12 @@ import {
 interface FeedbackPopoverProps {
   x: number
   y: number
-  inspectedElement: InspectedElement
+  /** Single element inspection (for click selection) */
+  inspectedElement?: InspectedElement
+  /** Multiple elements (for area selection) */
+  elements?: InspectedElement[]
+  /** Element count for area selection (used when elements not yet loaded) */
+  elementCount?: number
   theme: ToolbarTheme
   zIndex: number
   stepNumber: number
@@ -22,7 +27,19 @@ interface FeedbackPopoverProps {
   onClose: () => void
 }
 
-export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNumber, accentColor, onSubmit, onClose }: FeedbackPopoverProps) {
+export function FeedbackPopover({
+  x,
+  y,
+  inspectedElement,
+  elements,
+  elementCount,
+  theme,
+  zIndex,
+  stepNumber,
+  accentColor,
+  onSubmit,
+  onClose,
+}: FeedbackPopoverProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -50,6 +67,15 @@ export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNum
 
   const isEmpty = text.trim().length === 0
 
+  // Determine header text based on selection type
+  const isAreaSelection = elements !== undefined || elementCount !== undefined
+  const count = elements?.length ?? elementCount ?? 0
+  const headerText = isAreaSelection
+    ? count === 0
+      ? `#${stepNumber} — Empty area`
+      : `#${stepNumber} — ${count} element${count !== 1 ? 's' : ''} selected`
+    : `#${stepNumber} — ${inspectedElement?.selector ?? 'Unknown'}`
+
   const popover = (
     <div
       data-smart-inspector="feedback-popover"
@@ -61,7 +87,9 @@ export function FeedbackPopover({ x, y, inspectedElement, theme, zIndex, stepNum
     >
       <div style={getFeedbackPopoverStyle(x, y, theme)} onClick={(e) => e.stopPropagation()}>
         <div style={getFeedbackHeaderStyle(theme)}>
-          <span>#{stepNumber} — {inspectedElement.selector}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {headerText}
+          </span>
           <button type="button" style={getFeedbackCloseStyle(theme)} onClick={onClose} aria-label="Close">
             <X size={12} />
           </button>
