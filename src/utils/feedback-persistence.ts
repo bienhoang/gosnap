@@ -1,5 +1,6 @@
 import type { FeedbackItem, SerializedFeedbackItem, InspectedElement, SerializedElement } from '../types'
 import { collectMetadata } from './element-metadata'
+import { safeQuerySelector } from './dom-helpers'
 
 const STORAGE_PREFIX = 'pro-ui-fb:'
 
@@ -71,16 +72,6 @@ export function loadSerializedFeedbacks(key: string): SerializedFeedbackItem[] {
     // Corrupted data — clear and return empty
     clearPersistedFeedbacks(key)
     return []
-  }
-}
-
-/** Safe querySelector that returns null on invalid selectors */
-function safeQuerySelector(selector: string): HTMLElement | null {
-  if (!selector) return null
-  try {
-    return document.querySelector(selector) as HTMLElement | null
-  } catch {
-    return null
   }
 }
 

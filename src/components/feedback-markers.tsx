@@ -1,20 +1,17 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2 } from '../icons'
+import { Pencil } from '../icons'
 import { usePortalContainer } from '../contexts/portal-context'
-import type { FeedbackItem, ToolbarTheme, InspectedElement } from '../types'
+import type { FeedbackItem, ToolbarTheme } from '../types'
+import { isMultiSelect } from '../utils/feedback-helpers'
+import { resolveElement } from '../utils/dom-helpers'
+import { FeedbackEditPopup } from './feedback-edit-popup'
 import {
   getStepMarkerStyle,
   getFocusedMarkerStyle,
   getStepMarkerTooltipStyle,
   getMarkerTooltipSelectorStyle,
   getOrphanMarkerStyle,
-  getEditPopupOverlayStyle,
-  getEditPopupStyle,
-  getEditPopupHeaderStyle,
-  getEditPopupFooterStyle,
-  getEditPopupBtnStyle,
-  getFeedbackTextareaStyle,
   getGroupTooltipStyle,
   getAreaOnlyMarkerStyle,
 } from '../styles'
@@ -36,29 +33,11 @@ interface FeedbackMarkersProps {
   onUpdate?: (id: string, content: string) => void
 }
 
-/** Check if feedback is a multi-select (has elements array or areaData) */
-function isMultiSelect(fb: FeedbackItem): boolean {
-  return !!(fb.elements && fb.elements.length > 0) || !!fb.areaData
-}
-
-/** Resolve the target element — use stored ref, fall back to querySelector */
-function resolveElement(fb: FeedbackItem): HTMLElement | null {
-  if (fb.targetElement?.isConnected) return fb.targetElement
-  if (!fb.selector) return null
-  try {
-    return document.querySelector(fb.selector) as HTMLElement | null
-  } catch {
-    return null
-  }
-}
-
 export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, focusedMarkerId, editTargetId, onEditTriggered, onDelete, onUpdate }: FeedbackMarkersProps) {
   const portalContainer = usePortalContainer()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [editingFb, setEditingFb] = useState<FeedbackItem | null>(null)
-  const [editContent, setEditContent] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const rafRef = useRef<number>(0)
 
   // Separate feedbacks into active and orphans
@@ -133,16 +112,8 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
     }
   }, [active, syncPositions, requestSync])
 
-  // Auto-focus textarea when edit popup opens
-  useEffect(() => {
-    if (editingFb && textareaRef.current) {
-      textareaRef.current.focus()
-    }
-  }, [editingFb])
-
   const handleEditOpen = useCallback((fb: FeedbackItem) => {
     setEditingFb(fb)
-    setEditContent(fb.content)
     setHoveredId(null)
   }, [])
 
@@ -154,97 +125,21 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
     onEditTriggered?.()
   }, [editTargetId, feedbacks, handleEditOpen, onEditTriggered])
 
-  const handleEditSave = useCallback(() => {
-    const trimmed = editContent.trim()
-    if (!trimmed || !editingFb) return
-    onUpdate?.(editingFb.id, trimmed)
+  const handleEditSave = useCallback((id: string, content: string) => {
+    onUpdate?.(id, content)
     setEditingFb(null)
-  }, [editingFb, editContent, onUpdate])
+  }, [onUpdate])
 
-  const handleEditDelete = useCallback(() => {
-    if (!editingFb) return
-    onDelete?.(editingFb)
+  const handleEditDelete = useCallback((fb: FeedbackItem) => {
+    onDelete?.(fb)
     setEditingFb(null)
-  }, [editingFb, onDelete])
+  }, [onDelete])
 
   const handleEditCancel = useCallback(() => {
     setEditingFb(null)
   }, [])
 
-  const handleEditKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleEditCancel()
-    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      handleEditSave()
-    }
-  }, [handleEditCancel, handleEditSave])
-
   if (feedbacks.length === 0 || !visible) return null
-
-  // Edit popup
-  const editPopup = editingFb && (
-    <div
-      data-smart-inspector="edit-popup"
-      style={{ ...getEditPopupOverlayStyle(), zIndex: zIndex + 10 }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) handleEditCancel() }}
-    >
-      <div style={getEditPopupStyle(theme)} onKeyDown={handleEditKeyDown}>
-        <div style={getEditPopupHeaderStyle(theme, accentColor)} title={editingFb.selector}>
-          #{editingFb.stepNumber} — {isMultiSelect(editingFb)
-            ? `${editingFb.areaData?.elementCount ?? editingFb.elements?.length ?? 0} elements`
-            : editingFb.selector || 'Unknown'}
-        </div>
-
-        {/* Show element list for multi-select */}
-        {isMultiSelect(editingFb) && editingFb.elements && editingFb.elements.length > 0 && (
-          <details style={{ marginBottom: 8 }}>
-            <summary style={{ cursor: 'pointer', fontSize: 12, opacity: 0.7, color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a' }}>
-              View elements
-            </summary>
-            <ul style={{ margin: '8px 0', paddingLeft: 20, fontSize: 12, color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a', maxHeight: 120, overflowY: 'auto' }}>
-              {editingFb.elements.map((el, i) => (
-                <li key={el.selector + i} style={{ marginBottom: 2 }}>
-                  <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{el.tagName}: {el.selector.split('>').pop()?.trim()}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-
-        {editingFb.isAreaOnly && (
-          <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 8, color: theme === 'dark' ? '#e5e5e5' : '#1a1a1a' }}>
-            Empty area annotation
-          </div>
-        )}
-
-        <textarea
-          ref={textareaRef}
-          style={getFeedbackTextareaStyle(theme)}
-          value={editContent}
-          onChange={(e) => setEditContent(e.target.value)}
-          placeholder="Edit feedback..."
-        />
-        <div style={getEditPopupFooterStyle()}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button type="button" style={getEditPopupBtnStyle(theme, 'ghost', accentColor)} onClick={handleEditCancel}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              style={getEditPopupBtnStyle(theme, 'primary', accentColor)}
-              onClick={handleEditSave}
-              disabled={!editContent.trim()}
-            >
-              Save
-            </button>
-          </div>
-          <button type="button" style={getEditPopupBtnStyle(theme, 'danger', accentColor)} onClick={handleEditDelete}>
-            <Trash2 size={12} /> Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 
   const markers = (
     <div
@@ -340,7 +235,18 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
   return (
     <>
       {createPortal(markers, portalContainer)}
-      {editPopup && createPortal(editPopup, portalContainer)}
+      {editingFb && createPortal(
+        <FeedbackEditPopup
+          feedback={editingFb}
+          theme={theme}
+          zIndex={zIndex}
+          accentColor={accentColor}
+          onSave={handleEditSave}
+          onDelete={handleEditDelete}
+          onCancel={handleEditCancel}
+        />,
+        portalContainer
+      )}
     </>
   )
 }

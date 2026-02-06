@@ -1,4 +1,7 @@
-import type { FeedbackItem, AreaData, InspectedElement } from '../types'
+import type { FeedbackItem, InspectedElement } from '../types'
+import { isMultiSelect } from './feedback-helpers'
+
+type FormatMode = 'detailed' | 'debug'
 
 /** Collect current environment info */
 function getEnvironment(): {
@@ -26,11 +29,6 @@ function formatStyles(styles: Record<string, string>): string {
       return `${prop}: ${v}`
     })
     .join('; ')
-}
-
-/** Check if feedback is multi-select */
-function isMultiSelect(fb: FeedbackItem): boolean {
-  return !!(fb.elements && fb.elements.length > 0) || !!fb.areaData
 }
 
 /** Build element description list for multi-select header */
@@ -82,11 +80,11 @@ function getContextText(elements: InspectedElement[]): string {
 }
 
 // =============================================================================
-// DETAILED FORMAT
+// UNIFIED FORMATTERS
 // =============================================================================
 
-/** Format a single-element feedback (detailed mode) */
-function formatSingleDetailed(fb: FeedbackItem, lines: string[]): void {
+/** Format a single-element feedback for either mode */
+function formatSingle(fb: FeedbackItem, mode: FormatMode, lines: string[]): void {
   const m = fb.element?.metadata
   const bb = m?.boundingBox
   const desc = m?.elementDescription ?? fb.selector
@@ -94,18 +92,42 @@ function formatSingleDetailed(fb: FeedbackItem, lines: string[]): void {
   lines.push(`### ${fb.stepNumber}. ${desc}`)
 
   if (fb.orphan) {
-    lines.push(`**Status:** Orphaned (element not found)`)
-    lines.push(`**Last Selector:** \`${fb.selector}\``)
-  } else {
+    if (mode === 'detailed') {
+      lines.push(`**Status:** Orphaned (element not found)`)
+      lines.push(`**Last Selector:** \`${fb.selector}\``)
+    } else {
+      lines.push(`**Status:** Orphaned`)
+      lines.push(`**Last Known Selector:** ${fb.selector}`)
+    }
+    lines.push(`**Feedback:** ${fb.content}`)
+    return
+  }
+
+  if (mode === 'detailed') {
     if (m?.elementPath) lines.push(`**Location:** ${m.elementPath}`)
     if (bb) lines.push(`**Position:** ${bb.x}px, ${bb.y}px (${bb.width}×${bb.height}px)`)
+  } else {
+    if (m?.fullPath) lines.push(`**Full DOM Path:** ${m.fullPath}`)
+    if (bb) lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
+
+    if (bb && bb.width > 0) {
+      const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
+      const pxFromTop = Math.round(bb.y + fb.offsetY)
+      lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
+    }
+
+    if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
+      lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
+    }
+
+    if (m?.nearbyElements) lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
   }
 
   lines.push(`**Feedback:** ${fb.content}`)
 }
 
-/** Format a multi-select feedback (detailed mode) */
-function formatMultiSelectDetailed(fb: FeedbackItem, lines: string[]): void {
+/** Format a multi-select feedback for either mode */
+function formatMultiSelect(fb: FeedbackItem, mode: FormatMode, lines: string[]): void {
   const elements = fb.elements ?? []
   const elementCount = fb.areaData?.elementCount ?? elements.length
   const areaData = fb.areaData
@@ -139,9 +161,24 @@ function formatMultiSelectDetailed(fb: FeedbackItem, lines: string[]): void {
 
   if (fb.isAreaOnly) {
     lines.push('')
-    lines.push(`_Note: This annotation targets empty space, not specific elements._`)
+    lines.push(mode === 'detailed'
+      ? `_Note: This annotation targets empty space, not specific elements._`
+      : `_Note: Empty space annotation - no element data._`)
   }
 }
+
+/** Format a single feedback item (dispatches to single or multi-select) */
+function formatFeedback(fb: FeedbackItem, mode: FormatMode, lines: string[]): void {
+  if (isMultiSelect(fb)) {
+    formatMultiSelect(fb, mode, lines)
+  } else {
+    formatSingle(fb, mode, lines)
+  }
+}
+
+// =============================================================================
+// PUBLIC EXPORTS
+// =============================================================================
 
 /**
  * Detailed format — lighter markdown with viewport,
@@ -154,16 +191,11 @@ export function formatDetailed(feedbacks: FeedbackItem[]): string {
   lines.push(`## Page Feedback: ${pathname}`)
   lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
 
-  // Sort by step number
   const sorted = [...feedbacks].sort((a, b) => a.stepNumber - b.stepNumber)
 
   for (const fb of sorted) {
     lines.push('')
-    if (isMultiSelect(fb)) {
-      formatMultiSelectDetailed(fb, lines)
-    } else {
-      formatSingleDetailed(fb, lines)
-    }
+    formatFeedback(fb, 'detailed', lines)
   }
 
   return lines.join('\n')
@@ -177,92 +209,9 @@ export function formatDetailedSingle(fb: FeedbackItem): string {
   lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
   lines.push('')
 
-  if (isMultiSelect(fb)) {
-    formatMultiSelectDetailed(fb, lines)
-  } else {
-    formatSingleDetailed(fb, lines)
-  }
+  formatFeedback(fb, 'detailed', lines)
 
   return lines.join('\n')
-}
-
-// =============================================================================
-// DEBUG FORMAT
-// =============================================================================
-
-/** Format a single-element feedback (debug mode) */
-function formatSingleDebug(fb: FeedbackItem, lines: string[]): void {
-  const m = fb.element?.metadata
-  const bb = m?.boundingBox
-  const desc = m?.elementDescription ?? fb.selector
-
-  lines.push(`### ${fb.stepNumber}. ${desc}`)
-
-  if (fb.orphan) {
-    lines.push(`**Status:** Orphaned`)
-    lines.push(`**Last Known Selector:** ${fb.selector}`)
-    lines.push(`**Feedback:** ${fb.content}`)
-    return
-  }
-
-  if (m?.fullPath) lines.push(`**Full DOM Path:** ${m.fullPath}`)
-
-  if (bb) {
-    lines.push(`**Position:** x:${bb.x}, y:${bb.y} (${bb.width}×${bb.height}px)`)
-  }
-
-  if (bb && bb.width > 0) {
-    const pctLeft = ((fb.offsetX / bb.width) * 100).toFixed(1)
-    const pxFromTop = Math.round(bb.y + fb.offsetY)
-    lines.push(`**Annotation at:** ${pctLeft}% from left, ${pxFromTop}px from top`)
-  }
-
-  if (m?.computedStyles && Object.keys(m.computedStyles).length > 0) {
-    lines.push(`**Computed Styles:** ${formatStyles(m.computedStyles)}`)
-  }
-
-  if (m?.nearbyElements) lines.push(`**Nearby Elements:** ${m.nearbyElements}`)
-
-  lines.push(`**Feedback:** ${fb.content}`)
-}
-
-/** Format a multi-select feedback (debug mode) */
-function formatMultiSelectDebug(fb: FeedbackItem, lines: string[]): void {
-  const elements = fb.elements ?? []
-  const elementCount = fb.areaData?.elementCount ?? elements.length
-  const areaData = fb.areaData
-
-  if (fb.isAreaOnly) {
-    lines.push(`### ${fb.stepNumber}. Area Annotation (empty space)`)
-  } else {
-    const elementDescs = buildElementDescriptions(elements)
-    lines.push(`### ${fb.stepNumber}. ${elementCount} elements: ${elementDescs}`)
-  }
-
-  lines.push(`**Location:** multi-select`)
-
-  const commonClasses = getCommonClasses(elements)
-  if (commonClasses.length > 0) {
-    lines.push(`**Classes:** ${commonClasses.join(', ')}`)
-  }
-
-  if (areaData) {
-    const x = Math.round(areaData.centerX - areaData.width / 2)
-    const y = Math.round(areaData.centerY - areaData.height / 2)
-    lines.push(`**Position:** ${x}px, ${y}px (${areaData.width}×${areaData.height}px)`)
-  }
-
-  const context = getContextText(elements)
-  if (context) {
-    lines.push(`**Context:** ${context}`)
-  }
-
-  lines.push(`**Feedback:** ${fb.content}`)
-
-  if (fb.isAreaOnly) {
-    lines.push('')
-    lines.push(`_Note: Empty space annotation - no element data._`)
-  }
 }
 
 /**
@@ -285,16 +234,11 @@ export function formatDebug(feedbacks: FeedbackItem[]): string {
   lines.push('')
   lines.push('---')
 
-  // Sort by step number
   const sorted = [...feedbacks].sort((a, b) => a.stepNumber - b.stepNumber)
 
   for (const fb of sorted) {
     lines.push('')
-    if (isMultiSelect(fb)) {
-      formatMultiSelectDebug(fb, lines)
-    } else {
-      formatSingleDebug(fb, lines)
-    }
+    formatFeedback(fb, 'debug', lines)
   }
 
   return lines.join('\n')
@@ -314,11 +258,7 @@ export function formatDebugSingle(fb: FeedbackItem): string {
   lines.push(`- Device Pixel Ratio: ${env.dpr}`)
   lines.push('')
 
-  if (isMultiSelect(fb)) {
-    formatMultiSelectDebug(fb, lines)
-  } else {
-    formatSingleDebug(fb, lines)
-  }
+  formatFeedback(fb, 'debug', lines)
 
   return lines.join('\n')
 }

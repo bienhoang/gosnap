@@ -1,4 +1,7 @@
 import { defineConfig } from 'tsup'
+import pkg from './package.json'
+
+const PKG_VERSION = JSON.stringify(pkg.version)
 
 export default defineConfig([
   // Existing ESM/CJS build for React apps
@@ -12,6 +15,9 @@ export default defineConfig([
     minify: true,
     external: ['react', 'react-dom', 'lucide-react'],
     treeshake: true,
+    define: {
+      __PKG_VERSION__: PKG_VERSION,
+    },
   },
   // NEW: IIFE build for embedding (self-contained)
   {
@@ -27,7 +33,9 @@ export default defineConfig([
     noExternal: ['react', 'react-dom', 'lucide-react'],
     esbuildOptions(options) {
       options.define = {
+        ...options.define,
         'process.env.NODE_ENV': '"production"',
+        __PKG_VERSION__: PKG_VERSION,
       }
       // Target modern browsers (ES2020)
       options.target = 'es2020'

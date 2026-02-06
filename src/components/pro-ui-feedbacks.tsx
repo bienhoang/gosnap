@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Menu, Play, Pause, MessageSquare, Copy, Check, Trash2, Settings, X } from '../icons'
-import type { ProUIFeedbacksProps, InspectedElement } from '../types'
-import type { InspectClickEvent, InspectAreaEvent, DragArea } from '../hooks/use-smart-inspector'
+import type { ProUIFeedbacksProps } from '../types'
 import {
   getContainerStyle,
   getToolbarStyle,
@@ -18,6 +17,9 @@ import { useFeedbackStore } from '../hooks/use-feedback-store'
 import { useKeyboardShortcuts, isInputFocused } from '../hooks/use-keyboard-shortcuts'
 import { useSettingsStore } from '../hooks/use-settings-store'
 import { usePathname } from '../hooks/use-pathname'
+import { useToolbarState } from '../hooks/use-toolbar-state'
+import { usePendingFeedback } from '../hooks/use-pending-feedback'
+import { useMarkerFocus } from '../hooks/use-marker-focus'
 import { buildPersistKey } from '../utils/feedback-persistence'
 import { formatDetailed, formatDebug } from '../utils/format-feedbacks'
 import { SmartInspectorOverlay } from './smart-inspector-overlay'
@@ -28,17 +30,6 @@ import { FeedbackListPopup } from './feedback-list-popup'
 import { PortalContext } from '../contexts/portal-context'
 
 const ICON_SIZE = 16
-
-interface PendingFeedback {
-  x: number
-  y: number
-  element: InspectedElement
-}
-
-interface PendingAreaFeedback {
-  area: DragArea
-  elements: InspectedElement[]
-}
 
 export function ProUIFeedbacks({
   onToggle,
@@ -59,19 +50,12 @@ export function ProUIFeedbacks({
   persist,
   portalContainer,
 }: ProUIFeedbacksProps) {
-  const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const [active, setActive] = useState(false)
   const [triggerHovered, setTriggerHovered] = useState(false)
-  const [focusIndex, setFocusIndex] = useState(-1)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [feedbackListOpen, setFeedbackListOpen] = useState(false)
-  const toolbarRef = useRef<HTMLDivElement>(null)
-  const [mounted, setMounted] = useState(false)
-  const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null)
-  const [pendingAreaFeedback, setPendingAreaFeedback] = useState<PendingAreaFeedback | null>(null)
-  const [focusedMarkerIndex, setFocusedMarkerIndex] = useState<number | null>(null)
-  const [editTargetId, setEditTargetId] = useState<string | null>(null)
   const [copiedRecently, setCopiedRecently] = useState(false)
+  const toolbarRef = useRef<HTMLDivElement>(null)
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const pathname = usePathname()
@@ -81,7 +65,16 @@ export function ProUIFeedbacks({
   const theme = settings.theme
   const accentColor = settings.markerColor
 
-  const expanded = !collapsed
+  const { collapsed, expanded, focusIndex, setFocusIndex, mounted, toggleCollapsed, collapse } = useToolbarState(defaultCollapsed)
+
+  const pending = usePendingFeedback({
+    addFeedback,
+    addGroupFeedback,
+    onInspect,
+    onFeedbackSubmit,
+  })
+
+  const markerFocus = useMarkerFocus(feedbacks, collapsed)
 
   // Reset inspector/popups on page change
   const prevPathnameRef = useRef(pathname)
@@ -89,111 +82,47 @@ export function ProUIFeedbacks({
     if (prevPathnameRef.current !== pathname) {
       prevPathnameRef.current = pathname
       setActive(false)
-      setPendingFeedback(null)
-      setPendingAreaFeedback(null)
+      pending.clearPending()
       setSettingsOpen(false)
       setFeedbackListOpen(false)
-      setFocusedMarkerIndex(null)
-      setEditTargetId(null)
     }
-  }, [pathname])
+  }, [pathname, pending])
 
   useEffect(() => {
-    setMounted(true)
-    return () => {
-      setMounted(false)
-      clearTimeout(copyTimeoutRef.current)
-    }
+    return () => clearTimeout(copyTimeoutRef.current)
   }, [])
 
   const handleDeactivate = useCallback(() => {
     setActive(false)
-    setPendingFeedback(null)
-    setPendingAreaFeedback(null)
+    pending.clearPending()
     onToggle?.(false)
-  }, [onToggle])
-
-  const handleInspectClick = useCallback((event: InspectClickEvent) => {
-    onInspect?.(event.element)
-    // Open feedback popover at click position
-    setPendingFeedback({
-      x: event.clickX,
-      y: event.clickY,
-      element: event.element,
-    })
-  }, [onInspect])
-
-  const handleInspectArea = useCallback((event: InspectAreaEvent) => {
-    // Store area selection for popover
-    setPendingAreaFeedback({
-      area: event.area,
-      elements: event.elements,
-    })
-  }, [])
+  }, [onToggle, pending])
 
   // Smart Inspector hook
-  // Escape handling is centralized in handleEscapeChain via useKeyboardShortcuts
   const { hoveredElement, dragArea } = useSmartInspector({
-    active: active && !pendingFeedback && !pendingAreaFeedback, // pause hover when popover is open
-    onInspectClick: handleInspectClick,
-    onInspectArea: handleInspectArea,
+    active: active && !pending.pendingFeedback && !pending.pendingAreaFeedback,
+    onInspectClick: pending.handleInspectClick,
+    onInspectArea: pending.handleInspectArea,
     excludeRef: toolbarRef,
   })
-
-  const handleFeedbackSubmit = useCallback((content: string) => {
-    if (!pendingFeedback) return
-    const item = addFeedback(content, pendingFeedback.x, pendingFeedback.y, pendingFeedback.element)
-    onFeedbackSubmit?.(item)
-    setPendingFeedback(null)
-  }, [pendingFeedback, addFeedback, onFeedbackSubmit])
-
-  const handleFeedbackClose = useCallback(() => {
-    setPendingFeedback(null)
-  }, [])
-
-  /** Submit feedback for area (drag) selection */
-  const handleAreaFeedbackSubmit = useCallback((content: string) => {
-    if (!pendingAreaFeedback) return
-    const item = addGroupFeedback(content, pendingAreaFeedback.area, pendingAreaFeedback.elements)
-    onFeedbackSubmit?.(item)
-    setPendingAreaFeedback(null)
-  }, [pendingAreaFeedback, addGroupFeedback, onFeedbackSubmit])
-
-  const handleAreaFeedbackClose = useCallback(() => {
-    setPendingAreaFeedback(null)
-  }, [])
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev
-      if (!next) setTimeout(() => setFocusIndex(0), 300)
-      else setFocusIndex(-1)
-      return next
-    })
-  }, [])
 
   const handleToggle = useCallback(() => {
     setActive((prev) => {
       const next = !prev
-      if (!next) {
-        setPendingFeedback(null)
-        setPendingAreaFeedback(null)
-      }
+      if (!next) pending.clearPending()
       onToggle?.(next)
       return next
     })
-  }, [onToggle])
+  }, [onToggle, pending])
 
   const handleClose = useCallback(() => {
     if (active) {
       setActive(false)
-      setPendingFeedback(null)
-      setPendingAreaFeedback(null)
+      pending.clearPending()
       onToggle?.(false)
     }
-    setCollapsed(true)
-    setFocusIndex(-1)
-  }, [active, onToggle])
+    collapse()
+  }, [active, onToggle, pending, collapse])
 
   const handleDeleteAll = useCallback(() => {
     clearFeedbacks()
@@ -204,7 +133,6 @@ export function ProUIFeedbacks({
     const text = settings.outputMode === 'debug' ? formatDebug(feedbacks) : formatDetailed(feedbacks)
     navigator.clipboard.writeText(text).catch(() => { /* silent */ })
     onCopy?.()
-    // Show success icon for 1 second
     clearTimeout(copyTimeoutRef.current)
     setCopiedRecently(true)
     copyTimeoutRef.current = setTimeout(() => setCopiedRecently(false), 1000)
@@ -220,42 +148,15 @@ export function ProUIFeedbacks({
     onSettings?.()
   }, [onSettings])
 
-  // --- Keyboard shortcut handlers ---
-
-  const focusPrev = useCallback(() => {
-    setFocusedMarkerIndex((prev) => {
-      if (prev === null || prev === 0) return feedbacks.length - 1
-      return prev - 1
-    })
-  }, [feedbacks.length])
-
-  const focusNext = useCallback(() => {
-    setFocusedMarkerIndex((prev) => {
-      if (prev === null) return 0
-      return (prev + 1) % feedbacks.length
-    })
-  }, [feedbacks.length])
-
-  const openFocusedEdit = useCallback(() => {
-    if (focusedMarkerIndex === null) return
-    const fb = feedbacks[focusedMarkerIndex]
-    if (fb) setEditTargetId(fb.id)
-  }, [focusedMarkerIndex, feedbacks])
-
+  // --- Escape chain ---
   const handleEscapeChain = useCallback(() => {
-    // 1. Edit popup — handled by FeedbackMarkers internal keydown; check if it exists
     if (document.querySelector('[data-smart-inspector="edit-popup"]')) return
-    // 2. Feedback list popup
     if (feedbackListOpen) { setFeedbackListOpen(false); return }
-    // 3. Settings popup
     if (settingsOpen) { setSettingsOpen(false); return }
-    // 4. Inspector
     if (active) { handleDeactivate(); return }
-    // 5. Focused marker
-    if (focusedMarkerIndex !== null) { setFocusedMarkerIndex(null); return }
-    // 6. Collapse toolbar
+    if (markerFocus.focusedMarkerIndex !== null) { markerFocus.clearFocus(); return }
     if (expanded) { handleClose(); return }
-  }, [feedbackListOpen, settingsOpen, active, handleDeactivate, focusedMarkerIndex, expanded, handleClose])
+  }, [feedbackListOpen, settingsOpen, active, handleDeactivate, markerFocus, expanded, handleClose])
 
   useKeyboardShortcuts({
     'mod+shift+f': { handler: toggleCollapsed },
@@ -265,35 +166,14 @@ export function ProUIFeedbacks({
     'mod+shift+,': { handler: handleSettingsToggle, guard: () => expanded },
     'mod+shift+backspace': { handler: handleDeleteAll, guard: () => feedbacks.length > 0 },
     'mod+z': { handler: undoDelete, guard: () => canUndo },
-    '[': { handler: focusPrev, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
-    ']': { handler: focusNext, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
-    'enter': { handler: openFocusedEdit, guard: () => focusedMarkerIndex !== null && !isInputFocused() },
+    '[': { handler: markerFocus.focusPrev, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
+    ']': { handler: markerFocus.focusNext, guard: () => expanded && feedbacks.length > 0 && !isInputFocused() },
+    'enter': { handler: markerFocus.openFocusedEdit, guard: () => markerFocus.focusedMarkerIndex !== null && !isInputFocused() },
     'escape': { handler: handleEscapeChain },
   })
 
-  // Scroll focused marker's target element into view
-  useEffect(() => {
-    if (focusedMarkerIndex === null) return
-    const fb = feedbacks[focusedMarkerIndex]
-    if (!fb) return
-    const el = fb.targetElement?.isConnected ? fb.targetElement : document.querySelector(fb.selector) as HTMLElement | null
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [focusedMarkerIndex, feedbacks])
-
-  // Reset focused marker on collapse or feedbacks length change
-  useEffect(() => {
-    if (collapsed) setFocusedMarkerIndex(null)
-  }, [collapsed])
-
-  useEffect(() => {
-    setFocusedMarkerIndex(null)
-  }, [feedbacks.length])
-
-  const focusedMarkerId = focusedMarkerIndex !== null ? feedbacks[focusedMarkerIndex]?.id : undefined
-
   const tooltipAbove = position.startsWith('bottom')
 
-  // Build the pre-configured items
   const items = [
     { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', description: active ? 'Deactivate inspector' : 'Activate inspector', shortcut: '⌘⇧I', onClick: handleToggle, active },
     { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, description: 'View feedback list', shortcut: '⌘⇧L', onClick: handleFeedbackListToggle },
@@ -325,7 +205,7 @@ export function ProUIFeedbacks({
         setFocusIndex(count - 1)
       }
     },
-    [collapsed, items.length, handleClose]
+    [collapsed, items.length, handleClose, setFocusIndex]
   )
 
   // Focus management via DOM query
@@ -341,21 +221,16 @@ export function ProUIFeedbacks({
     if (collapsed || active) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      // Use composedPath to get actual target (handles Shadow DOM retargeting)
       const path = e.composedPath()
       const target = (path.length > 0 ? path[0] : e.target) as HTMLElement
-
-      // Ignore clicks on toolbar, feedback markers, and edit popups
       if (toolbarRef.current?.contains(target)) return
       if (target.closest?.('[data-smart-inspector]')) return
-
-      setCollapsed(true)
-      setFocusIndex(-1)
+      collapse()
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [collapsed, active])
+  }, [collapsed, active, collapse])
 
   if (!mounted) return null
 
@@ -379,7 +254,6 @@ export function ProUIFeedbacks({
         style={getToolbarStyle(theme, expanded)}
         onKeyDown={handleKeyDown}
       >
-        {/* Trigger button - opens/collapses */}
         <button
           type="button"
           style={triggerStyle}
@@ -397,7 +271,6 @@ export function ProUIFeedbacks({
           )}
         </button>
 
-        {/* Pre-configured items with animation */}
         <div style={expanded ? getDividerStyle(theme) : { width: 0, transition: 'width 200ms ease' }} />
         <div style={getItemsContainerStyle(expanded)}>
           {items.map((item, index) => (
@@ -423,39 +296,38 @@ export function ProUIFeedbacks({
   )
 
   const toolbarRect = toolbarRef.current?.getBoundingClientRect() ?? null
-
   const container = portalContainer ?? document.body
 
   return (
     <PortalContext.Provider value={container}>
       {createPortal(toolbar, container)}
-      {active && !pendingFeedback && !pendingAreaFeedback && (
+      {active && !pending.pendingFeedback && !pending.pendingAreaFeedback && (
         <SmartInspectorOverlay hoveredElement={hoveredElement} dragArea={dragArea} theme={theme} zIndex={zIndex} accentColor={accentColor} />
       )}
-      {pendingFeedback && (
+      {pending.pendingFeedback && (
         <FeedbackPopover
-          x={pendingFeedback.x}
-          y={pendingFeedback.y}
-          inspectedElement={pendingFeedback.element}
+          x={pending.pendingFeedback.x}
+          y={pending.pendingFeedback.y}
+          inspectedElement={pending.pendingFeedback.element}
           theme={theme}
           zIndex={zIndex}
           stepNumber={feedbacks.length + 1}
           accentColor={accentColor}
-          onSubmit={handleFeedbackSubmit}
-          onClose={handleFeedbackClose}
+          onSubmit={pending.handleFeedbackSubmit}
+          onClose={pending.handleFeedbackClose}
         />
       )}
-      {pendingAreaFeedback && (
+      {pending.pendingAreaFeedback && (
         <FeedbackPopover
-          x={pendingAreaFeedback.area.x + pendingAreaFeedback.area.width / 2}
-          y={pendingAreaFeedback.area.y + pendingAreaFeedback.area.height / 2}
-          elements={pendingAreaFeedback.elements}
+          x={pending.pendingAreaFeedback.area.x + pending.pendingAreaFeedback.area.width / 2}
+          y={pending.pendingAreaFeedback.area.y + pending.pendingAreaFeedback.area.height / 2}
+          elements={pending.pendingAreaFeedback.elements}
           theme={theme}
           zIndex={zIndex}
           stepNumber={feedbacks.length + 1}
           accentColor={accentColor}
-          onSubmit={handleAreaFeedbackSubmit}
-          onClose={handleAreaFeedbackClose}
+          onSubmit={pending.handleAreaFeedbackSubmit}
+          onClose={pending.handleAreaFeedbackClose}
         />
       )}
       <FeedbackMarkers
@@ -464,9 +336,9 @@ export function ProUIFeedbacks({
         zIndex={zIndex}
         visible={expanded || active}
         accentColor={accentColor}
-        focusedMarkerId={focusedMarkerId}
-        editTargetId={editTargetId ?? undefined}
-        onEditTriggered={() => setEditTargetId(null)}
+        focusedMarkerId={markerFocus.focusedMarkerId}
+        editTargetId={markerFocus.editTargetId ?? undefined}
+        onEditTriggered={() => markerFocus.setEditTargetId(null)}
         onUpdate={(id, content) => {
           updateFeedback(id, content)
           onFeedbackUpdate?.(id, content)

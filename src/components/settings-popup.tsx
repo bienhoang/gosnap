@@ -3,9 +3,10 @@ import { Sun, Moon } from '../icons'
 import type { ToolbarTheme } from '../types'
 import type { OutputMode } from '../hooks/use-settings-store'
 import { MARKER_COLORS } from '../hooks/use-settings-store'
+import { getThemeColors, getPopupOverlayStyle, getPopupContainerStyle, getPopupLabelStyle } from '../styles'
 
 const PKG_NAME = 'Pro UI Feedbacks'
-const PKG_VERSION = '0.2.1'
+const PKG_VERSION = __PKG_VERSION__
 
 interface SettingsPopupProps {
   theme: ToolbarTheme
@@ -31,43 +32,17 @@ export function SettingsPopup({
   toolbarRect,
   zIndex,
 }: SettingsPopupProps) {
+  const colors = getThemeColors(theme)
   const isDark = theme === 'dark'
-  const bg = isDark ? '#1a1a1a' : '#ffffff'
-  const text = isDark ? '#e5e5e5' : '#1a1a1a'
-  const border = isDark ? '#333333' : '#e5e5e5'
-  const mutedText = isDark ? '#888888' : '#999999'
-  const hoverBg = isDark ? '#2a2a2a' : '#f5f5f5'
 
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose()
   }, [onClose])
 
-  // Calculate popup position above toolbar
   const popupStyle: React.CSSProperties = {
-    position: 'fixed',
-    width: toolbarRect ? toolbarRect.width : 280,
+    ...getPopupContainerStyle(theme, toolbarRect, zIndex),
     padding: 14,
     boxSizing: 'border-box',
-    backgroundColor: bg,
-    border: `1px solid ${border}`,
-    borderRadius: 12,
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: 13,
-    color: text,
-    zIndex: zIndex + 5,
-    ...(toolbarRect
-      ? { bottom: window.innerHeight - toolbarRect.top + 8, right: window.innerWidth - toolbarRect.right }
-      : { bottom: 80, right: 20 }),
-  }
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 600,
-    color: mutedText,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: 6,
   }
 
   const rowStyle: React.CSSProperties = {
@@ -85,7 +60,7 @@ export function SettingsPopup({
     fontWeight: 600,
     cursor: 'pointer',
     backgroundColor: isActive ? (isDark ? '#2a2a2a' : '#e5e5e5') : 'transparent',
-    color: isActive ? text : mutedText,
+    color: isActive ? colors.text : colors.muted,
     transition: 'all 150ms ease',
   })
 
@@ -108,10 +83,10 @@ export function SettingsPopup({
     width: 28,
     height: 28,
     padding: 0,
-    border: `1px solid ${border}`,
+    border: `1px solid ${colors.border}`,
     borderRadius: 6,
-    backgroundColor: hoverBg,
-    color: text,
+    backgroundColor: colors.hover,
+    color: colors.text,
     cursor: 'pointer',
     transition: 'all 150ms ease',
     flexShrink: 0,
@@ -120,7 +95,7 @@ export function SettingsPopup({
   return (
     <div
       data-smart-inspector="settings-popup"
-      style={{ position: 'fixed', inset: 0, zIndex: zIndex + 4 }}
+      style={getPopupOverlayStyle(zIndex)}
       onMouseDown={handleOverlayClick}
     >
       <div style={popupStyle} onMouseDown={(e) => e.stopPropagation()}>
@@ -130,7 +105,7 @@ export function SettingsPopup({
             <span style={{ fontWeight: 700, fontSize: 13 }}>{PKG_NAME}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: mutedText }}>v{PKG_VERSION}</span>
+            <span style={{ fontSize: 11, color: colors.muted }}>v{PKG_VERSION}</span>
             <button
               type="button"
               style={themeToggleBtnStyle}
@@ -143,11 +118,11 @@ export function SettingsPopup({
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, backgroundColor: border, margin: '0 -14px 12px', }} />
+        <div style={{ height: 1, backgroundColor: colors.border, margin: '0 -14px 12px', }} />
 
         {/* Row 2: Output Setting */}
         <div style={{ marginBottom: 14 }}>
-          <div style={labelStyle}>Output Setting</div>
+          <div style={getPopupLabelStyle(theme)}>Output Setting</div>
           <div style={{
             display: 'flex',
             gap: 2,
@@ -174,7 +149,7 @@ export function SettingsPopup({
 
         {/* Row 3: Marker Color */}
         <div>
-          <div style={labelStyle}>Marker Color</div>
+          <div style={getPopupLabelStyle(theme)}>Marker Color</div>
           <div style={{ display: 'flex', gap: 8 }}>
             {MARKER_COLORS.map((c) => (
               <button
