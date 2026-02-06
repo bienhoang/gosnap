@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { usePortalContainer } from '../contexts/portal-context'
 import type { InspectedElement, ToolbarTheme } from '../types'
 import type { DragArea } from '../hooks/use-smart-inspector'
 import { getElementsInArea } from '../utils/element-intersection'
@@ -26,6 +27,7 @@ interface SmartInspectorOverlayProps {
 const MAX_HIGHLIGHTED = 50
 
 export function SmartInspectorOverlay({ hoveredElement, dragArea, theme, zIndex, accentColor }: SmartInspectorOverlayProps) {
+  const portalContainer = usePortalContainer()
   const [intersectingElements, setIntersectingElements] = useState<HTMLElement[]>([])
   const frameRef = useRef<number>(0)
   const frameCountRef = useRef(0)
@@ -96,5 +98,5 @@ export function SmartInspectorOverlay({ hoveredElement, dragArea, theme, zIndex,
     </div>
   )
 
-  return createPortal(overlay, document.body)
+  return createPortal(overlay, portalContainer)
 }

@@ -177,4 +177,6 @@ export interface ProUIFeedbacksProps {
   style?: CSSProperties
   /** Enable localStorage persistence. `true` = per-page key, string = custom key */
   persist?: boolean | string
+  /** Custom portal container for rendering overlays (used by Web Component) */
+  portalContainer?: HTMLElement
 }

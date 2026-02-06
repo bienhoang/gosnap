@@ -3,7 +3,8 @@
 </p>
 
 <p align="center">
-  A lightweight floating toolbar for collecting visual UI feedback directly on your React or Next.js app.<br/>
+  A lightweight floating toolbar for collecting visual UI feedback on any website.<br/>
+  Works with React, Next.js, or as a standalone embed for HTML, WordPress, Vue, Angular, and more.<br/>
   Click any element, leave a note, and gather structured annotations — perfect for design reviews, QA, and stakeholder feedback.
 </p>
 
@@ -55,6 +56,69 @@ function App() {
 ```
 
 The toolbar appears as a collapsed floating button (bottom-right by default). Click it to expand, hit **Start** to activate the inspector, then click any element to leave feedback.
+
+## Embed (Non-React)
+
+For non-React sites (HTML, WordPress, Vue, Angular, etc.), use the self-contained embeddable script:
+
+### Web Component
+
+```html
+<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<pro-ui-feedbacks position="bottom-right" theme="dark" persist></pro-ui-feedbacks>
+```
+
+### Imperative API
+
+```html
+<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script>
+  const widget = ProUIFeedbacks.init({
+    position: 'bottom-right',
+    theme: 'dark',
+    persist: 'my-session'
+  });
+
+  // Later: widget.destroy();
+</script>
+```
+
+### Custom Element Attributes
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `position` | `string` | `'bottom-right'` | Toolbar position |
+| `theme` | `string` | `'dark'` | Color theme (`'dark'` or `'light'`) |
+| `z-index` | `number` | `9999` | Base z-index |
+| `collapsed` | `boolean` | `true` | Start collapsed |
+| `persist` | `boolean\|string` | — | Enable localStorage persistence |
+
+### Events (Custom Element)
+
+```javascript
+const widget = document.querySelector('pro-ui-feedbacks');
+
+widget.addEventListener('toggle', (e) => console.log('Active:', e.detail.active));
+widget.addEventListener('feedback-submit', (e) => console.log('Feedback:', e.detail.feedback));
+widget.addEventListener('feedback-delete', (e) => console.log('Deleted:', e.detail.feedbackId));
+widget.addEventListener('copy', () => console.log('Copied'));
+```
+
+### WordPress Integration
+
+```html
+<!-- Add to theme footer or Custom HTML widget -->
+<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script>
+  ProUIFeedbacks.init({
+    position: 'bottom-right',
+    theme: 'dark',
+    persist: 'wp-feedback'
+  });
+</script>
+```
+
+> **Bundle size:** ~76KB gzip (includes React runtime, fully self-contained)
 
 ## Props
 
@@ -249,10 +313,17 @@ import { Bug } from 'lucide-react'
 
 ## Compatibility
 
+**React Package:**
 - React 18 or 19
 - Works with Next.js (App Router & Pages Router), Vite, CRA, Remix, and any React setup
 - ESM and CommonJS builds included
 - TypeScript declarations included
+
+**Embeddable Script:**
+- Any website (no build tools required)
+- Chrome 80+, Firefox 75+, Safari 13.1+, Edge 80+
+- Shadow DOM for style isolation
+- ~76KB gzip (includes React runtime)
 
 ## Development
 

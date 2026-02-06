@@ -52,6 +52,28 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
   const rafRef = useRef<number>(0)
   const dragRef = useRef<DragState | null>(null)
 
+  /** Get actual event target, handling Shadow DOM retargeting */
+  const getActualTarget = useCallback((e: MouseEvent): HTMLElement | null => {
+    // composedPath()[0] gives the actual target even across shadow boundaries
+    const path = e.composedPath()
+    return path.length > 0 ? (path[0] as HTMLElement) : (e.target as HTMLElement | null)
+  }, [])
+
+  /** Check if target is inside our widget (handles Shadow DOM) */
+  const isInsideWidget = useCallback((target: HTMLElement | null): boolean => {
+    if (!target) return false
+    // Check if inside excludeRef (toolbar)
+    if (excludeRef?.current?.contains(target)) return true
+    // Check for data-smart-inspector attribute
+    if (target.closest?.('[data-smart-inspector]')) return true
+    // Check if target is inside a shadow host with our tag name
+    const host = target.getRootNode() as ShadowRoot | Document
+    if (host instanceof ShadowRoot && host.host?.tagName?.toLowerCase() === 'pro-ui-feedbacks') {
+      return true
+    }
+    return false
+  }, [excludeRef])
+
   /** Handle mouse move for hover highlight and drag tracking */
   const handleMouseMove = useCallback((e: MouseEvent) => {
     // Drag tracking (if dragging)
@@ -86,28 +108,23 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
         setHoveredElement(null)
         return
       }
-      // Skip toolbar elements
-      if (excludeRef?.current?.contains(target)) {
+      // Skip widget elements (toolbar, overlays, etc.)
+      if (isInsideWidget(target)) {
         setHoveredElement(null)
-        return
-      }
-      // Skip our own overlay elements
-      if (target.closest('[data-smart-inspector]')) {
         return
       }
       setHoveredElement(buildInspectedElement(target))
     })
-  }, [excludeRef])
+  }, [excludeRef, isInsideWidget])
 
   /** Handle mouse down to start potential drag */
   const handleMouseDown = useCallback((e: MouseEvent) => {
     // Only handle left click
     if (e.button !== 0) return
 
-    const target = e.target as HTMLElement | null
-    // Skip toolbar and inspector elements
-    if (excludeRef?.current?.contains(target)) return
-    if (target?.closest('[data-smart-inspector]')) return
+    const target = getActualTarget(e)
+    // Skip widget elements (toolbar, overlays, etc.)
+    if (isInsideWidget(target)) return
 
     dragRef.current = {
       startX: e.clientX,
@@ -116,7 +133,7 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
       currentY: e.clientY,
       isDragging: false,
     }
-  }, [excludeRef])
+  }, [getActualTarget, isInsideWidget])
 
   /** Handle mouse up to complete drag or click */
   const handleMouseUp = useCallback((e: MouseEvent) => {
@@ -126,10 +143,9 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
 
     if (!drag) return
 
-    const target = e.target as HTMLElement | null
-    // Skip toolbar and inspector elements
-    if (excludeRef?.current?.contains(target)) return
-    if (target?.closest('[data-smart-inspector]')) return
+    const target = getActualTarget(e)
+    // Skip widget elements (toolbar, overlays, etc.)
+    if (isInsideWidget(target)) return
 
     if (drag.isDragging) {
       // Area selection complete
@@ -147,13 +163,13 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
       e.stopPropagation()
 
       const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
-      if (el && el !== document.documentElement && el !== document.body) {
+      if (el && el !== document.documentElement && el !== document.body && !isInsideWidget(el)) {
         const inspected = buildInspectedElement(el)
         onInspect?.(inspected)
         onInspectClick?.({ element: inspected, clickX: e.clientX, clickY: e.clientY })
       }
     }
-  }, [excludeRef, onInspect, onInspectClick, onInspectArea])
+  }, [excludeRef, getActualTarget, isInsideWidget, onInspect, onInspectClick, onInspectArea])
 
   /** Clear drag state if mouse leaves window */
   const handleMouseLeave = useCallback(() => {

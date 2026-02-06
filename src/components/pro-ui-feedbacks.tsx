@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Menu, Play, Pause, MessageSquare, Copy, Trash2, Settings, X } from '../icons'
+import { Menu, Play, Pause, MessageSquare, Copy, Check, Trash2, Settings, X } from '../icons'
 import type { ProUIFeedbacksProps, InspectedElement } from '../types'
 import type { InspectClickEvent, InspectAreaEvent, DragArea } from '../hooks/use-smart-inspector'
 import {
@@ -25,6 +25,7 @@ import { FeedbackPopover } from './feedback-popover'
 import { FeedbackMarkers } from './feedback-markers'
 import { SettingsPopup } from './settings-popup'
 import { FeedbackListPopup } from './feedback-list-popup'
+import { PortalContext } from '../contexts/portal-context'
 
 const ICON_SIZE = 16
 
@@ -56,6 +57,7 @@ export function ProUIFeedbacks({
   triggerIcon,
   style,
   persist,
+  portalContainer,
 }: ProUIFeedbacksProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
   const [active, setActive] = useState(false)
@@ -69,6 +71,8 @@ export function ProUIFeedbacks({
   const [pendingAreaFeedback, setPendingAreaFeedback] = useState<PendingAreaFeedback | null>(null)
   const [focusedMarkerIndex, setFocusedMarkerIndex] = useState<number | null>(null)
   const [editTargetId, setEditTargetId] = useState<string | null>(null)
+  const [copiedRecently, setCopiedRecently] = useState(false)
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const pathname = usePathname()
   const persistKey = persist ? buildPersistKey(persist, pathname) : undefined
@@ -96,7 +100,10 @@ export function ProUIFeedbacks({
 
   useEffect(() => {
     setMounted(true)
-    return () => setMounted(false)
+    return () => {
+      setMounted(false)
+      clearTimeout(copyTimeoutRef.current)
+    }
   }, [])
 
   const handleDeactivate = useCallback(() => {
@@ -197,6 +204,10 @@ export function ProUIFeedbacks({
     const text = settings.outputMode === 'debug' ? formatDebug(feedbacks) : formatDetailed(feedbacks)
     navigator.clipboard.writeText(text).catch(() => { /* silent */ })
     onCopy?.()
+    // Show success icon for 1 second
+    clearTimeout(copyTimeoutRef.current)
+    setCopiedRecently(true)
+    copyTimeoutRef.current = setTimeout(() => setCopiedRecently(false), 1000)
   }, [feedbacks, settings.outputMode, onCopy])
 
   const handleFeedbackListToggle = useCallback(() => {
@@ -286,8 +297,8 @@ export function ProUIFeedbacks({
   const items = [
     { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', description: active ? 'Deactivate inspector' : 'Activate inspector', shortcut: '⌘⇧I', onClick: handleToggle, active },
     { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, description: 'View feedback list', shortcut: '⌘⇧L', onClick: handleFeedbackListToggle },
-    { id: 'copy', icon: <Copy size={ICON_SIZE} />, label: 'Copy', description: 'Copy all to clipboard', shortcut: '⌘⇧C', onClick: handleCopy },
-    { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', description: 'Remove all feedbacks', shortcut: '⌘⇧⌫', onClick: handleDeleteAll },
+    { id: 'copy', icon: copiedRecently ? <Check size={ICON_SIZE} color="#22c55e" /> : <Copy size={ICON_SIZE} />, label: copiedRecently ? 'Copied!' : 'Copy', description: 'Copy all to clipboard', shortcut: '⌘⇧C', onClick: handleCopy },
+    { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', description: 'Remove all feedbacks', shortcut: '⌘⇧⌫', onClick: handleDeleteAll, hoverColor: '#ef4444' },
     { id: 'settings', icon: <Settings size={ICON_SIZE} />, label: 'Settings', description: 'Theme, output & colors', shortcut: '⌘⇧,', onClick: handleSettingsToggle },
     { id: 'close', icon: <X size={ICON_SIZE} />, label: 'Close', description: 'Collapse toolbar', onClick: handleClose },
   ]
@@ -330,10 +341,13 @@ export function ProUIFeedbacks({
     if (collapsed || active) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
+      // Use composedPath to get actual target (handles Shadow DOM retargeting)
+      const path = e.composedPath()
+      const target = (path.length > 0 ? path[0] : e.target) as HTMLElement
+
       // Ignore clicks on toolbar, feedback markers, and edit popups
       if (toolbarRef.current?.contains(target)) return
-      if (target.closest('[data-smart-inspector]')) return
+      if (target.closest?.('[data-smart-inspector]')) return
 
       setCollapsed(true)
       setFocusIndex(-1)
@@ -399,6 +413,7 @@ export function ProUIFeedbacks({
               accentColor={accentColor}
               tooltipAbove={tooltipAbove}
               zIndex={zIndex}
+              hoverColor={item.hoverColor}
               onClick={item.onClick}
             />
           ))}
@@ -409,9 +424,11 @@ export function ProUIFeedbacks({
 
   const toolbarRect = toolbarRef.current?.getBoundingClientRect() ?? null
 
+  const container = portalContainer ?? document.body
+
   return (
-    <>
-      {createPortal(toolbar, document.body)}
+    <PortalContext.Provider value={container}>
+      {createPortal(toolbar, container)}
       {active && !pendingFeedback && !pendingAreaFeedback && (
         <SmartInspectorOverlay hoveredElement={hoveredElement} dragArea={dragArea} theme={theme} zIndex={zIndex} accentColor={accentColor} />
       )}
@@ -471,7 +488,7 @@ export function ProUIFeedbacks({
           toolbarRect={toolbarRect}
           zIndex={zIndex}
         />,
-        document.body
+        container
       )}
       {feedbackListOpen && createPortal(
         <FeedbackListPopup
@@ -483,8 +500,8 @@ export function ProUIFeedbacks({
           toolbarRect={toolbarRect}
           zIndex={zIndex}
         />,
-        document.body
+        container
       )}
-    </>
+    </PortalContext.Provider>
   )
 }

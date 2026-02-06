@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Pencil, Trash2 } from '../icons'
+import { usePortalContainer } from '../contexts/portal-context'
 import type { FeedbackItem, ToolbarTheme, InspectedElement } from '../types'
 import {
   getStepMarkerStyle,
@@ -52,6 +53,7 @@ function resolveElement(fb: FeedbackItem): HTMLElement | null {
 }
 
 export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, accentColor, focusedMarkerId, editTargetId, onEditTriggered, onDelete, onUpdate }: FeedbackMarkersProps) {
+  const portalContainer = usePortalContainer()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [editingFb, setEditingFb] = useState<FeedbackItem | null>(null)
   const [editContent, setEditContent] = useState('')
@@ -337,8 +339,8 @@ export function FeedbackMarkers({ feedbacks, theme, zIndex, visible = true, acce
 
   return (
     <>
-      {createPortal(markers, document.body)}
-      {editPopup && createPortal(editPopup, document.body)}
+      {createPortal(markers, portalContainer)}
+      {editPopup && createPortal(editPopup, portalContainer)}
     </>
   )
 }

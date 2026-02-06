@@ -51,10 +51,13 @@ jobs:
             exit 1
           fi
 
+      - name: Package tarball
+        run: npm pack
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md pro-ui-feedbacks-*.tgz
 
       - name: Publish to npm
         run: npm publish --provenance --access public

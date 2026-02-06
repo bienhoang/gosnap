@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { usePortalContainer } from '../contexts/portal-context'
 import type { ToolbarTheme } from '../types'
 import { getItemButtonStyle, getHoverBg } from '../styles'
 import type { ReactNode } from 'react'
@@ -22,13 +23,16 @@ interface ToolbarButtonProps {
   tooltipAbove?: boolean
   /** Base z-index for layering */
   zIndex?: number
+  /** Color to apply to icon on hover (e.g., red for delete) */
+  hoverColor?: string
   onClick: () => void
 }
 
 export function ToolbarButton({
   icon, label, description, shortcut, theme, tabIndex,
-  active, disabled, accentColor, tooltipAbove = true, zIndex = 9999, onClick,
+  active, disabled, accentColor, tooltipAbove = true, zIndex = 9999, hoverColor, onClick,
 }: ToolbarButtonProps) {
+  const portalContainer = usePortalContainer()
   const [hovered, setHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -103,7 +107,9 @@ export function ToolbarButton({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {icon}
+        <span style={{ color: hovered && hoverColor ? hoverColor : undefined, display: 'flex' }}>
+          {icon}
+        </span>
       </button>
       {hasTooltip && createPortal(
         <div style={tooltipStyle} data-smart-inspector="tooltip">
@@ -125,7 +131,7 @@ export function ToolbarButton({
             </div>
           )}
         </div>,
-        document.body,
+        portalContainer,
       )}
     </>
   )
