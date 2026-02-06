@@ -3,41 +3,76 @@
 </p>
 
 <p align="center">
-  A lightweight floating toolbar for collecting visual UI feedback on any website.<br/>
-  Works with React, Next.js, or as a standalone embed for HTML, WordPress, Vue, Angular, and more.<br/>
-  Click any element, leave a note, and gather structured annotations — perfect for design reviews, QA, and stakeholder feedback.
+  <strong>Annotate any UI. AI understands the rest.</strong><br/>
+  Click elements, leave notes, copy AI-ready markdown — works with Claude, ChatGPT, Cursor, or any AI tool.<br/>
+  Lightweight widget for any website: React, Next.js, Vue, HTML, WordPress, and more.
 </p>
 
 ![npm version](https://img.shields.io/npm/v/pro-ui-feedbacks)
 ![bundle size](https://img.shields.io/bundlephobia/minzip/pro-ui-feedbacks)
 ![license](https://img.shields.io/npm/l/pro-ui-feedbacks)
 
+## Why pro-ui-feedbacks?
+
+Screenshots lack context. Text descriptions are ambiguous. AI agents need **structured data** to act on your UI feedback.
+
+| Method | What AI gets | What's missing |
+|--------|-------------|----------------|
+| Screenshot | Pixels | No selectors, no DOM structure — AI guesses |
+| Copy HTML from DevTools | Raw markup | Too much noise, no annotations |
+| Text description | "the blue button on the right" | Ambiguous, no coordinates |
+| **pro-ui-feedbacks** | **CSS selector + DOM path + metadata + annotation + order** | **Nothing — structured & actionable** |
+
+## How It Works
+
+1. **Annotate** — click any element on your page. The tool captures its CSS selector, DOM path, bounding box, accessibility data, and nearby context. Type your feedback note.
+2. **Copy** — press `⌘⇧C`. All annotations are formatted as structured markdown and copied to your clipboard.
+3. **Paste to AI** — paste into Claude, ChatGPT, Cursor, or any AI agent. It knows *exactly* which elements you're referring to, their properties, and what you want changed. No guessing.
+
+## Output Example
+
+When you copy feedbacks, AI receives structured markdown like this:
+
+```markdown
+## Page Feedback: /dashboard
+
+**Viewport:** 1440×900
+
+### 1. button: "Submit Order"
+**Location:** .checkout-form > .actions > button.btn-primary
+**Position:** 892px, 1247px (120×40px)
+**Feedback:** Change button color from blue to green for better conversion
+
+### 2. heading: "Order Summary"
+**Location:** .sidebar > h2.summary-title
+**Position:** 1080px, 200px (300×32px)
+**Feedback:** Font size too small on mobile — increase to 18px
+```
+
+Switch to **debug mode** for even richer output: full DOM paths, computed styles, annotation coordinates, viewport info, and device pixel ratio.
+
 ## Features
 
-- **Smart Element Inspector** — hover to highlight any DOM element with selector + dimensions tooltip, click to annotate. Captures rich metadata: accessibility attributes, computed styles, DOM paths, and nearby elements
-- **Feedback Annotations** — numbered step markers pinned to elements, surviving scroll and resize. Click a marker to edit its text in-place
-- **Floating Toolbar** — collapsible pill UI with start/stop, feedback list, copy, delete, settings, and close actions. Shows a badge count when collapsed
-- **Settings Panel** — toggle dark/light theme, switch output mode (detailed or debug), and pick marker accent color from 6 presets. Settings persist across sessions
-- **Feedback List** — scrollable popup listing all feedbacks with per-item copy button
-- **Keyboard Shortcuts** — `⌘⇧F` toolbar, `⌘⇧I` inspector, `⌘⇧C` copy, `⌘⇧L` list, `⌘⇧,` settings, `⌘⇧⌫` delete all, `⌘Z` undo, `[`/`]` navigate markers, `Enter` edit
-- **Two Output Modes** — `detailed` (compact markdown) or `debug` (full markdown with environment, DOM path, computed styles, annotation position)
-- **Undo Delete** — restore the last deleted feedback with `⌘Z`
-- **Dark & Light Themes** — built-in theme support, zero CSS required (all styles are inline)
+- **AI-Ready Element Capture** — hover to highlight any DOM element, click to annotate. Captures CSS selectors, DOM paths, accessibility attributes, computed styles, bounding boxes, and nearby elements — so AI knows *exactly* which element you mean
+- **Ordered Annotations** — numbered step markers pinned to elements. AI follows your feedback in sequence. Markers survive scroll and resize; click to edit in-place
+- **AI-Optimized Output** — two modes: `detailed` (compact markdown with selector, location, position) or `debug` (full markdown with environment, DOM path, computed styles, annotation coordinates)
+- **Multi-Element Selection** — drag to select multiple elements and annotate as a group. Describe component-level issues to AI with one annotation
+- **Lightweight Widget** — collapsible floating toolbar with start/stop, feedback list, copy, delete, settings, and close. Shows badge count when collapsed
+- **Session Persistence** — opt-in `localStorage` persistence so feedbacks survive page reload, with orphan detection for missing elements
+- **Keyboard-First Workflow** — `⌘⇧F` toolbar, `⌘⇧I` inspector, `⌘⇧C` copy, `⌘⇧L` list, `[`/`]` navigate markers, and more
+- **Built-in Themes** — dark and light themes, zero CSS required (all styles are inline)
+- **Tiny Footprint** — ~14 kB minified React package, ~76 kB standalone embed. Zero runtime dependencies
 - **Fully Typed** — written in TypeScript with exported types for every prop and callback
-- **Tiny Footprint** — ~14 kB minified, zero runtime dependencies (only `react`, `react-dom`, and `lucide-react` as peer deps)
-- **Portal-Based** — renders via `createPortal` so it never conflicts with your app's layout or z-index
-- **Persistent Feedbacks** — opt-in `localStorage` persistence so feedbacks survive page reload, with orphan detection for missing elements
 - **SPA Aware** — auto-resets inspector and popups on route changes
+- **Portal-Based** — renders via `createPortal` so it never conflicts with your app's layout or z-index
 
-## Install
+## Get Started — React
 
 ```bash
 npm install pro-ui-feedbacks lucide-react
 ```
 
 > `react` and `react-dom` (v18 or v19) are required as peer dependencies.
-
-## Quick Start
 
 ```tsx
 import { ProUIFeedbacks } from 'pro-ui-feedbacks'
@@ -57,9 +92,9 @@ function App() {
 
 The toolbar appears as a collapsed floating button (bottom-right by default). Click it to expand, hit **Start** to activate the inspector, then click any element to leave feedback.
 
-## Embed (Non-React)
+## Get Started — Any Website
 
-For non-React sites (HTML, WordPress, Vue, Angular, etc.), use the self-contained embeddable script:
+Drop a single script tag on any site — HTML, WordPress, Vue, Angular, or anything else. No build tools required.
 
 ### Web Component
 
@@ -211,7 +246,9 @@ type ToolbarTheme = 'dark' | 'light'
 
 All types are exported from the package entry point, including `ElementMetadata`, `ElementAccessibility`, `SerializedFeedbackItem`, `AreaData`, `AreaBounds`, and `InspectAreaEvent`.
 
-## How It Works
+## Detailed Usage
+
+### Step-by-step
 
 1. **Expand** the floating toolbar by clicking the trigger button
 2. **Start** the inspector — your cursor becomes a crosshair, and elements highlight on hover with a selector + dimensions tooltip
@@ -324,6 +361,13 @@ import { Bug } from 'lucide-react'
 - Chrome 80+, Firefox 75+, Safari 13.1+, Edge 80+
 - Shadow DOM for style isolation
 - ~76KB gzip (includes React runtime)
+
+## Roadmap
+
+- [ ] MCP (Model Context Protocol) server — AI agents read feedbacks directly
+- [ ] Webhook integration — push feedbacks to any endpoint
+- [ ] JSON output format — alongside markdown
+- [ ] CLI tool — capture feedbacks from terminal
 
 ## Development
 

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-02-06
+
+### Changed
+
+- **Repositioned branding for AI agents** — tagline, description, features, and landing page now lead with AI-agent value prop instead of React/Next.js
+- README: new hero ("Annotate any UI. AI understands the rest."), "Why pro-ui-feedbacks?" comparison section, "How It Works" 3-step AI workflow, "Output Example" showing structured markdown, reframed features through AI-agent lens, added Roadmap section
+- package.json: updated description and keywords (AI terms first, platform terms after)
+- Landing page: updated hero, meta tags, feature cards, code section steps, and footer to match new positioning
+- Fixed code block indentation in landing page
+
 ## [0.3.0] - 2026-02-06
 
 ### Added
