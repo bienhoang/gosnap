@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Send } from 'lucide-react'
+import { X, Send } from '../icons'
 import type { InspectedElement, ToolbarTheme } from '../types'
 import {
   getFeedbackPopoverStyle,

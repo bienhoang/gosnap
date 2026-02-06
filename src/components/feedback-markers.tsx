@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from '../icons'
 import type { FeedbackItem, ToolbarTheme, InspectedElement } from '../types'
 import {
   getStepMarkerStyle,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { MessageSquare, Copy, Check } from 'lucide-react'
+import { MessageSquare, Copy, Check } from '../icons'
 import type { FeedbackItem, ToolbarTheme } from '../types'
 import { formatDebugSingle, formatDetailedSingle } from '../utils/format-feedbacks'
 

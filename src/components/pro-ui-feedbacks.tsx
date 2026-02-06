@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Menu, Play, Pause, MessageSquare, Copy, Trash2, Settings, X } from 'lucide-react'
+import { Menu, Play, Pause, MessageSquare, Copy, Trash2, Settings, X } from '../icons'
 import type { ProUIFeedbacksProps, InspectedElement } from '../types'
 import type { InspectClickEvent, InspectAreaEvent, DragArea } from '../hooks/use-smart-inspector'
 import {

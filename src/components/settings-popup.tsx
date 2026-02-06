@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon } from '../icons'
 import type { ToolbarTheme } from '../types'
 import type { OutputMode } from '../hooks/use-settings-store'
 import { MARKER_COLORS } from '../hooks/use-settings-store'

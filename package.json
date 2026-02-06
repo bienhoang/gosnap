@@ -2,11 +2,13 @@
   "name": "pro-ui-feedbacks",
   "author": "Bien Hoang <me@bienhoang.xyz>",
   "version": "0.3.0",
-  "description": "Visual UI Feedback for React/Next.js apps",
+  "description": "Visual UI Feedback for React/Next.js apps and any website via embeddable script",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/embed.global.js",
+  "jsdelivr": "./dist/embed.global.js",
   "exports": {
     ".": {
       "import": {
@@ -17,6 +19,10 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./embed": {
+      "types": null,
+      "default": "./dist/embed.global.js"
     }
   },
   "files": [
@@ -52,7 +58,11 @@
     "design-review",
     "qa",
     "toolbar",
-    "widget"
+    "widget",
+    "embeddable",
+    "web-component",
+    "wordpress",
+    "vanilla-js"
   ],
   "license": "MIT",
   "repository": {
