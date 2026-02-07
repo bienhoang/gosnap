@@ -364,54 +364,120 @@ import { Bug } from 'lucide-react'
 
 ## Vibe Kanban Sync
 
-Auto-sync feedbacks to [Vibe Kanban](https://github.com/bienhoang/vibe-kanban) as tasks. Two-layer architecture: browser widget posts to a local CLI bridge that talks to VK via MCP.
+Auto-sync feedbacks to [Vibe Kanban](https://github.com/bienhoang/vibe-kanban) as tasks. Every time you submit a feedback annotation, it automatically becomes a task on your Vibe Kanban board.
 
-### Quick Start
+### How It Works
+
+```
+Browser (your app)                CLI bridge (your terminal)           Vibe Kanban
+┌──────────────────┐  HTTP POST  ┌──────────────────────┐  MCP stdio  ┌────────┐
+│  Widget with      │ ────────→  │  npx pro-ui-feedbacks │ ──────────→ │  Board  │
+│  syncUrl prop     │  :3456     │  --sync-vk            │             │  Tasks  │
+└──────────────────┘             └──────────────────────┘             └────────┘
+```
+
+The widget **cannot** talk to Vibe Kanban directly (MCP requires a Node.js process). A lightweight CLI bridge runs in your terminal to relay feedbacks.
+
+### Prerequisites
+
+1. **Vibe Kanban** installed and at least one project created:
+   ```bash
+   npx vibe-kanban@latest
+   ```
+
+### Setup (3 steps)
+
+**Step 1 — Start the bridge** (keep this terminal open):
 
 ```bash
-# Terminal: start the sync server
 npx pro-ui-feedbacks --sync-vk
 ```
 
+You should see:
+```
+[vk-sync] Connecting to Vibe Kanban MCP...
+[vk-sync] Auto-detected project: My Project (abc123)
+[vk-sync] Listening on http://localhost:3456/webhook
+```
+
+> If you have multiple VK projects, specify one: `--project <id>`
+> Custom port: `--port 4000`
+
+**Step 2 — Add `syncUrl` to your widget:**
+
+<details>
+<summary><strong>React</strong></summary>
+
 ```tsx
-// React: enable sync
 <ProUIFeedbacks syncUrl="http://localhost:3456/webhook" />
 ```
+</details>
+
+<details>
+<summary><strong>Web Component</strong></summary>
 
 ```html
-<!-- Web Component -->
 <pro-ui-feedbacks sync-url="http://localhost:3456/webhook"></pro-ui-feedbacks>
 ```
+</details>
+
+<details>
+<summary><strong>Imperative API</strong></summary>
 
 ```html
-<!-- Imperative API -->
 <script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
 <script>
-  ProUIFeedbacks.init({
-    syncUrl: 'http://localhost:3456/webhook'
-  });
+  ProUIFeedbacks.init({ syncUrl: 'http://localhost:3456/webhook' });
 </script>
 ```
+</details>
 
-### Sync Props
+**Step 3 — Annotate your UI.** Each feedback you submit appears as a task `[UI] your feedback text` on the Vibe Kanban board with selector, position, and element metadata.
+
+### Sync Modes
+
+| Mode | Behavior | When to use |
+|------|----------|-------------|
+| `each` (default) | Syncs immediately after each feedback submit | Real-time tracking |
+| `batch` | Queues feedbacks, syncs all at once on **Copy** (⌘⇧C) or after 5s | Batch review sessions |
+
+```tsx
+// Batch mode: feedbacks sync when you hit Copy
+<ProUIFeedbacks syncUrl="http://localhost:3456/webhook" syncMode="batch" />
+```
+
+### Optional: Sync Deletes & Edits
+
+By default, only new feedbacks sync. Enable delete/edit sync with flags:
+
+```tsx
+<ProUIFeedbacks
+  syncUrl="http://localhost:3456/webhook"
+  syncDelete  // deleting a feedback also deletes the VK task
+  syncUpdate  // editing a feedback updates the VK task title
+/>
+```
+
+### All Sync Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `syncUrl` | `string` | — | Webhook endpoint URL |
-| `syncMode` | `'each' \| 'batch'` | `'each'` | Sync per-feedback or batch on copy |
-| `syncDelete` | `boolean` | `false` | Sync deletions to VK |
-| `syncUpdate` | `boolean` | `false` | Sync edits to VK |
-| `syncHeaders` | `Record<string, string>` | — | Custom headers for webhook requests |
-| `onSyncSuccess` | `(payload: SyncPayload) => void` | — | Called after successful sync |
-| `onSyncError` | `(error: Error, payload: SyncPayload) => void` | — | Called on sync failure |
+| `syncUrl` | `string` | — | Webhook URL (required for sync) |
+| `syncMode` | `'each' \| 'batch'` | `'each'` | When to sync (see above) |
+| `syncDelete` | `boolean` | `false` | Delete VK task when feedback is deleted |
+| `syncUpdate` | `boolean` | `false` | Update VK task when feedback is edited |
+| `syncHeaders` | `Record<string, string>` | — | Custom HTTP headers for webhook |
+| `onSyncSuccess` | `(payload) => void` | — | Callback after successful sync |
+| `onSyncError` | `(error, payload) => void` | — | Callback on sync failure (after 2 retries) |
 
-### CLI Options
+### Troubleshooting
 
-```bash
-npx pro-ui-feedbacks --sync-vk [--port 3456]
-```
-
-The CLI server auto-detects your VK project. Each feedback becomes a task titled `[UI] {feedback content}` with full element metadata in the description.
+| Problem | Solution |
+|---------|----------|
+| `Failed to fetch` in console | Bridge not running. Start it: `npx pro-ui-feedbacks --sync-vk` |
+| `No Vibe Kanban projects found` | Create a VK project first: `npx vibe-kanban@latest` |
+| Wrong project selected | Specify project: `npx pro-ui-feedbacks --sync-vk --project <id>` |
+| Port conflict | Use a different port: `--port 4000` and update `syncUrl` accordingly |
 
 ## Roadmap
 
