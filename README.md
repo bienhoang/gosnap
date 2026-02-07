@@ -364,7 +364,7 @@ import { Bug } from 'lucide-react'
 
 ## Vibe Kanban Sync
 
-Auto-sync feedbacks to [Vibe Kanban](https://github.com/bienhoang/vibe-kanban) as tasks. Every time you submit a feedback annotation, it automatically becomes a task on your Vibe Kanban board.
+Auto-sync feedbacks to [Vibe Kanban](https://github.com/BloopAI/vibe-kanban) as tasks. Every time you submit a feedback annotation, it automatically becomes a task on your Vibe Kanban board.
 
 ### How It Works
 
