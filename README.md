@@ -362,12 +362,53 @@ import { Bug } from 'lucide-react'
 - Shadow DOM for style isolation
 - ~76KB gzip (includes React runtime)
 
+## Vibe Kanban Sync
+
+Auto-sync feedbacks to [Vibe Kanban](https://github.com/bienhoang/vibe-kanban) as tasks. Two-layer architecture: browser widget posts to a local CLI bridge that talks to VK via MCP.
+
+### Quick Start
+
+```bash
+# Terminal: start the sync server
+npx pro-ui-feedbacks --sync-vk
+```
+
+```tsx
+// React: enable sync
+<ProUIFeedbacks syncUrl="http://localhost:3456/webhook" />
+```
+
+```html
+<!-- Web Component -->
+<pro-ui-feedbacks sync-url="http://localhost:3456/webhook"></pro-ui-feedbacks>
+```
+
+### Sync Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `syncUrl` | `string` | — | Webhook endpoint URL |
+| `syncMode` | `'each' \| 'batch'` | `'each'` | Sync per-feedback or batch on copy |
+| `syncDelete` | `boolean` | `false` | Sync deletions to VK |
+| `syncUpdate` | `boolean` | `false` | Sync edits to VK |
+| `syncHeaders` | `Record<string, string>` | — | Custom headers for webhook requests |
+| `onSyncSuccess` | `(payload: SyncPayload) => void` | — | Called after successful sync |
+| `onSyncError` | `(error: Error, payload: SyncPayload) => void` | — | Called on sync failure |
+
+### CLI Options
+
+```bash
+npx pro-ui-feedbacks --sync-vk [--port 3456]
+```
+
+The CLI server auto-detects your VK project. Each feedback becomes a task titled `[UI] {feedback content}` with full element metadata in the description.
+
 ## Roadmap
 
 - [ ] MCP (Model Context Protocol) server — AI agents read feedbacks directly
-- [ ] Webhook integration — push feedbacks to any endpoint
+- [x] ~~Webhook integration — push feedbacks to any endpoint~~
 - [ ] JSON output format — alongside markdown
-- [ ] CLI tool — capture feedbacks from terminal
+- [x] ~~CLI tool — capture feedbacks from terminal~~
 
 ## Development
 
