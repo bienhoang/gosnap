@@ -4,6 +4,11 @@ import type { SyncPayload, SyncFeedbackData } from '../types'
 
 const TITLE_MAX = 100
 
+function parseMcpText(result: unknown): unknown {
+  const text = String((result as { content?: Array<{ text?: string }> })?.content?.[0]?.text ?? '{}')
+  try { return JSON.parse(text) } catch { return {} }
+}
+
 export class VKAdapter {
   private client: Client | null = null
   private projectId: string | null = null
@@ -19,15 +24,30 @@ export class VKAdapter {
     this.client = new Client({ name: 'pro-ui-feedbacks-sync', version: '1.0.0' })
     await this.client.connect(transport)
 
+    const result = await this.client.callTool({ name: 'list_projects', arguments: {} })
+    const parsed = parseMcpText(result) as Record<string, unknown>
+    const projects = (Array.isArray(parsed) ? parsed : (parsed.projects as Record<string, unknown>[]) ?? []) as Record<string, unknown>[]
+    if (projects.length === 0) throw new Error('No Vibe Kanban projects found. Create one first: npx vibe-kanban@latest')
+
     if (this.explicitProjectId) {
-      this.projectId = this.explicitProjectId
+      // Match by ID or name (case-insensitive)
+      const match = projects.find(
+        (p) => p.id === this.explicitProjectId || String(p.name).toLowerCase() === this.explicitProjectId!.toLowerCase(),
+      )
+      if (!match) {
+        console.error(`[vk-sync] Project "${this.explicitProjectId}" not found. Available projects:`)
+        for (const p of projects) console.error(`  - ${p.name} (${p.id})`)
+        throw new Error(`Project "${this.explicitProjectId}" not found.`)
+      }
+      this.projectId = String(match.id)
+      console.log(`[vk-sync] Using project: ${match.name} (${this.projectId})`)
+    } else if (projects.length === 1) {
+      this.projectId = String(projects[0].id)
+      console.log(`[vk-sync] Using project: ${projects[0].name} (${this.projectId})`)
     } else {
-      const result = await this.client.callTool({ name: 'list_projects', arguments: {} })
-      const text = String((result.content as Array<{ text?: string }>)[0]?.text ?? '[]')
-      const projects = JSON.parse(text)
-      if (projects.length === 0) throw new Error('No Vibe Kanban projects found. Create a project first.')
-      this.projectId = projects[0].id
-      console.log(`[vk-sync] Auto-detected project: ${projects[0].name} (${this.projectId})`)
+      console.error(`[vk-sync] Multiple projects found. Specify one with --project <name|id>:`)
+      for (const p of projects) console.error(`  - ${p.name} (${p.id})`)
+      throw new Error('Multiple projects found. Use --project <name|id> to select one.')
     }
   }
 
@@ -65,10 +85,10 @@ export class VKAdapter {
             description: this.buildDescription(payload.feedback, payload.page),
           },
         })
-        const text = String((result.content as Array<{ text?: string }>)[0]?.text ?? '{}')
-        const task = JSON.parse(text)
-        if (task.id) this.feedbackMap.set(payload.feedback.id, task.id)
-        console.log(`[vk-sync] Created task: ${task.id ?? 'unknown'}`)
+        const parsed = parseMcpText(result) as Record<string, unknown>
+        const taskId = String(parsed.task_id ?? parsed.id ?? '')
+        if (taskId) this.feedbackMap.set(payload.feedback.id, taskId)
+        console.log(`[vk-sync] Created task: ${taskId || 'unknown'}`)
         break
       }
       case 'feedback.updated': {
@@ -105,9 +125,9 @@ export class VKAdapter {
               description: this.buildDescription(fb, payload.page),
             },
           })
-          const text = String((result.content as Array<{ text?: string }>)[0]?.text ?? '{}')
-          const task = JSON.parse(text)
-          if (task.id) this.feedbackMap.set(fb.id, task.id)
+          const parsed = parseMcpText(result) as Record<string, unknown>
+          const taskId = String(parsed.task_id ?? parsed.id ?? '')
+          if (taskId) this.feedbackMap.set(fb.id, taskId)
         }
         console.log(`[vk-sync] Batch created ${payload.feedbacks.length} tasks`)
         break

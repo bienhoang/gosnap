@@ -7,5 +7,5 @@ if (args.includes('--sync-vk')) {
   console.log('Usage:')
   console.log('  npx pro-ui-feedbacks --sync-vk              Start Vibe Kanban sync server')
   console.log('  npx pro-ui-feedbacks --sync-vk --port 3456  Custom port')
-  console.log('  npx pro-ui-feedbacks --sync-vk --project ID Specific VK project')
+  console.log('  npx pro-ui-feedbacks --sync-vk --project NAME|ID  Specific VK project')
 }
