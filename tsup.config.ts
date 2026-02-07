@@ -41,4 +41,23 @@ export default defineConfig([
       options.target = 'es2020'
     },
   },
+  // CLI build for Vibe Kanban sync server (Node.js)
+  {
+    entry: { cli: 'src/cli/index.ts' },
+    format: ['esm'],
+    outDir: 'dist',
+    platform: 'node',
+    target: 'node18',
+    splitting: false,
+    sourcemap: false,
+    minify: false,
+    treeshake: true,
+    external: ['node:http', 'node:child_process', '@modelcontextprotocol/sdk'],
+    banner: {
+      js: '#!/usr/bin/env node',
+    },
+    define: {
+      __PKG_VERSION__: PKG_VERSION,
+    },
+  },
 ])

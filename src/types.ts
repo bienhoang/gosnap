@@ -144,7 +144,82 @@ export interface SerializedFeedbackItem {
   elements?: SerializedElement[]
 }
 
-export interface ProUIFeedbacksProps {
+// =============================================================================
+// SYNC TYPES
+// =============================================================================
+
+/** Sync mode: 'each' fires per feedback, 'batch' collects and fires on trigger */
+export type SyncMode = 'each' | 'batch'
+
+/** Event types for sync payloads */
+export type SyncEventType = 'feedback.created' | 'feedback.updated' | 'feedback.deleted' | 'feedback.batch'
+
+/** Serialized element data for sync (no DOM refs) */
+export interface SyncElementData {
+  selector: string
+  tagName: string
+  className: string
+  elementId: string
+  elementPath?: string
+  fullPath?: string
+  elementDescription?: string
+  boundingBox?: { x: number; y: number; width: number; height: number }
+  accessibility?: { role?: string; label?: string }
+}
+
+/** Single feedback in sync payload */
+export interface SyncFeedbackData {
+  id: string
+  stepNumber: number
+  content: string
+  selector: string
+  pageX: number
+  pageY: number
+  createdAt: number
+  element?: SyncElementData
+  areaData?: AreaData
+  isAreaOnly?: boolean
+  elements?: SyncElementData[]
+}
+
+/** Webhook payload sent to sync endpoint */
+export interface SyncPayload {
+  event: SyncEventType
+  timestamp: number
+  page: {
+    url: string
+    pathname: string
+    viewport: { width: number; height: number }
+  }
+  feedback?: SyncFeedbackData
+  feedbacks?: SyncFeedbackData[]
+  feedbackId?: string
+  updatedContent?: string
+}
+
+/** Sync configuration props */
+export interface SyncConfig {
+  /** URL to POST webhook payloads to */
+  syncUrl?: string
+  /** Additional headers for sync requests */
+  syncHeaders?: Record<string, string>
+  /** Sync mode: 'each' (default) or 'batch' */
+  syncMode?: SyncMode
+  /** Sync on feedback delete (default: false) */
+  syncDelete?: boolean
+  /** Sync on feedback update (default: false) */
+  syncUpdate?: boolean
+  /** Called on successful sync */
+  onSyncSuccess?: (payload: SyncPayload) => void
+  /** Called on sync failure after retries exhausted */
+  onSyncError?: (error: Error, payload: SyncPayload) => void
+}
+
+// =============================================================================
+// COMPONENT PROPS
+// =============================================================================
+
+export interface ProUIFeedbacksProps extends SyncConfig {
   /** Callback when Start/Stop is toggled */
   onToggle?: (active: boolean) => void
   /** Callback when an element is selected via inspector */

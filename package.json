@@ -7,6 +7,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "pro-ui-feedbacks": "./dist/cli.js"
+  },
   "unpkg": "./dist/embed.global.js",
   "jsdelivr": "./dist/embed.global.js",
   "exports": {
@@ -29,23 +32,27 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && chmod +x dist/cli.js",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
+    "lucide-react": ">=0.263.0",
     "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0",
-    "lucide-react": ">=0.263.0"
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "optionalDependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "@types/node": "^25.2.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
-    "tsup": "^8.4.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0"
   },
   "keywords": [
     "ai-feedback",
@@ -62,7 +69,9 @@
     "nextjs",
     "web-component",
     "embeddable",
-    "vanilla-js"
+    "vanilla-js",
+    "vibe-kanban",
+    "webhook"
   ],
   "license": "MIT",
   "repository": {

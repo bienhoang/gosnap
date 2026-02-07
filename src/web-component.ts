@@ -6,9 +6,9 @@
 import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { ProUIFeedbacks } from './components/pro-ui-feedbacks'
-import type { ProUIFeedbacksProps, ToolbarPosition, ToolbarTheme } from './types'
+import type { ProUIFeedbacksProps, ToolbarPosition, ToolbarTheme, SyncMode } from './types'
 
-const OBSERVED_ATTRS = ['position', 'theme', 'z-index', 'collapsed', 'persist'] as const
+const OBSERVED_ATTRS = ['position', 'theme', 'z-index', 'collapsed', 'persist', 'sync-url', 'sync-mode', 'sync-delete', 'sync-update'] as const
 
 /**
  * Custom Element that wraps ProUIFeedbacks React component
@@ -70,12 +70,23 @@ export class ProUIFeedbacksElement extends HTMLElement {
     const collapsed = this.getAttribute('collapsed') !== 'false'
     const persistAttr = this.getAttribute('persist')
 
+    // Sync attributes
+    const syncUrl = this.getAttribute('sync-url') || undefined
+    const syncMode = (this.getAttribute('sync-mode') || undefined) as SyncMode | undefined
+    const syncDelete = this.getAttribute('sync-delete') === 'true'
+    const syncUpdate = this.getAttribute('sync-update') === 'true'
+
     return {
       position,
       theme,
       zIndex,
       defaultCollapsed: collapsed,
       persist: persistAttr === '' ? true : persistAttr || undefined,
+      // Sync config
+      syncUrl,
+      syncMode,
+      syncDelete,
+      syncUpdate,
       // Portal container for Shadow DOM rendering
       portalContainer: this.shadowContainer!,
       // Callback wrappers that dispatch CustomEvents

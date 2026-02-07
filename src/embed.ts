@@ -67,6 +67,14 @@ export interface InitOptions {
   collapsed?: boolean
   /** LocalStorage key for persistence */
   persist?: string | boolean
+  /** URL to POST webhook payloads to */
+  syncUrl?: string
+  /** Sync mode: 'each' (default) or 'batch' */
+  syncMode?: 'each' | 'batch'
+  /** Sync on feedback delete */
+  syncDelete?: boolean
+  /** Sync on feedback update */
+  syncUpdate?: boolean
 }
 
 export interface WidgetInstance {
@@ -89,6 +97,10 @@ export function init(options: InitOptions = {}): WidgetInstance {
     zIndex = 9999,
     collapsed = true,
     persist,
+    syncUrl,
+    syncMode,
+    syncDelete,
+    syncUpdate,
   } = options
 
   // Resolve container
@@ -109,6 +121,12 @@ export function init(options: InitOptions = {}): WidgetInstance {
   if (persist !== undefined) {
     element.setAttribute('persist', persist === true ? '' : String(persist))
   }
+
+  // Sync attributes
+  if (syncUrl) element.setAttribute('sync-url', syncUrl)
+  if (syncMode) element.setAttribute('sync-mode', syncMode)
+  if (syncDelete) element.setAttribute('sync-delete', 'true')
+  if (syncUpdate) element.setAttribute('sync-update', 'true')
 
   // Append to container
   targetContainer.appendChild(element)

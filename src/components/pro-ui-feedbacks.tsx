@@ -20,6 +20,7 @@ import { usePathname } from '../hooks/use-pathname'
 import { useToolbarState } from '../hooks/use-toolbar-state'
 import { usePendingFeedback } from '../hooks/use-pending-feedback'
 import { useMarkerFocus } from '../hooks/use-marker-focus'
+import { useSync } from '../hooks/use-sync'
 import { buildPersistKey } from '../utils/feedback-persistence'
 import { formatDetailed, formatDebug } from '../utils/format-feedbacks'
 import { SmartInspectorOverlay } from './smart-inspector-overlay'
@@ -49,6 +50,13 @@ export function ProUIFeedbacks({
   style,
   persist,
   portalContainer,
+  syncUrl,
+  syncHeaders,
+  syncMode,
+  syncDelete,
+  syncUpdate,
+  onSyncSuccess,
+  onSyncError,
 }: ProUIFeedbacksProps) {
   const [active, setActive] = useState(false)
   const [triggerHovered, setTriggerHovered] = useState(false)
@@ -67,11 +75,20 @@ export function ProUIFeedbacks({
 
   const { collapsed, expanded, focusIndex, setFocusIndex, mounted, toggleCollapsed, collapse } = useToolbarState(defaultCollapsed)
 
+  const sync = useSync({ syncUrl, syncHeaders, syncMode, syncDelete, syncUpdate, onSyncSuccess, onSyncError })
+
   const pending = usePendingFeedback({
     addFeedback,
     addGroupFeedback,
     onInspect,
-    onFeedbackSubmit,
+    onFeedbackSubmit: (item) => {
+      onFeedbackSubmit?.(item)
+      if (syncMode === 'batch') {
+        sync.queueForSync(item)
+      } else {
+        sync.syncCreated(item)
+      }
+    },
   })
 
   const markerFocus = useMarkerFocus(feedbacks, collapsed)
@@ -133,10 +150,11 @@ export function ProUIFeedbacks({
     const text = settings.outputMode === 'debug' ? formatDebug(feedbacks) : formatDetailed(feedbacks)
     navigator.clipboard.writeText(text).catch(() => { /* silent */ })
     onCopy?.()
+    sync.flushSync()
     clearTimeout(copyTimeoutRef.current)
     setCopiedRecently(true)
     copyTimeoutRef.current = setTimeout(() => setCopiedRecently(false), 1000)
-  }, [feedbacks, settings.outputMode, onCopy])
+  }, [feedbacks, settings.outputMode, onCopy, sync])
 
   const handleFeedbackListToggle = useCallback(() => {
     setFeedbackListOpen((prev) => !prev)
@@ -342,10 +360,12 @@ export function ProUIFeedbacks({
         onUpdate={(id, content) => {
           updateFeedback(id, content)
           onFeedbackUpdate?.(id, content)
+          sync.syncUpdated(id, content)
         }}
         onDelete={(fb) => {
           deleteFeedback(fb.id)
           onFeedbackDelete?.(fb.id)
+          sync.syncDeleted(fb.id)
         }}
       />
       {settingsOpen && createPortal(

@@ -12,4 +12,11 @@ export type {
   AreaData,
   AreaBounds,
   InspectAreaEvent,
+  // Sync types
+  SyncConfig,
+  SyncMode,
+  SyncEventType,
+  SyncPayload,
+  SyncFeedbackData,
+  SyncElementData,
 } from './types'
