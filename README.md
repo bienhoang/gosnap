@@ -383,6 +383,16 @@ npx pro-ui-feedbacks --sync-vk
 <pro-ui-feedbacks sync-url="http://localhost:3456/webhook"></pro-ui-feedbacks>
 ```
 
+```html
+<!-- Imperative API -->
+<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script>
+  ProUIFeedbacks.init({
+    syncUrl: 'http://localhost:3456/webhook'
+  });
+</script>
+```
+
 ### Sync Props
 
 | Prop | Type | Default | Description |
@@ -406,9 +416,9 @@ The CLI server auto-detects your VK project. Each feedback becomes a task titled
 ## Roadmap
 
 - [ ] MCP (Model Context Protocol) server — AI agents read feedbacks directly
-- [x] ~~Webhook integration — push feedbacks to any endpoint~~
+- [x] Webhook integration — push feedbacks to any endpoint
 - [ ] JSON output format — alongside markdown
-- [x] ~~CLI tool — capture feedbacks from terminal~~
+- [x] CLI tool — capture feedbacks from terminal
 
 ## Development
 
