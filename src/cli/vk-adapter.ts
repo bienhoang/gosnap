@@ -21,7 +21,7 @@ export class VKAdapter {
       command: 'npx',
       args: ['vibe-kanban@latest', '--mcp'],
     })
-    this.client = new Client({ name: 'pro-ui-feedbacks-sync', version: '1.0.0' })
+    this.client = new Client({ name: 'gosnap-sync', version: '1.0.0' })
     await this.client.connect(transport)
 
     const result = await this.client.callTool({ name: 'list_projects', arguments: {} })

@@ -1,25 +1,25 @@
 /**
- * Web Component wrapper for ProUIFeedbacks
- * Enables usage as <pro-ui-feedbacks> custom element
+ * Web Component wrapper for GoSnap
+ * Enables usage as <go-snap> custom element
  */
 
 import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
-import { ProUIFeedbacks } from './components/pro-ui-feedbacks'
-import type { ProUIFeedbacksProps, ToolbarPosition, ToolbarTheme, SyncMode } from './types'
+import { GoSnap } from './components/gosnap'
+import type { GoSnapProps, ToolbarPosition, ToolbarTheme, SyncMode } from './types'
 
 const OBSERVED_ATTRS = ['position', 'theme', 'z-index', 'collapsed', 'persist', 'sync-url', 'sync-mode', 'sync-delete', 'sync-update'] as const
 
 /**
- * Custom Element that wraps ProUIFeedbacks React component
+ * Custom Element that wraps GoSnap React component
  * Uses Shadow DOM for style isolation from host page
  *
  * @example
  * ```html
- * <pro-ui-feedbacks position="bottom-right" theme="dark"></pro-ui-feedbacks>
+ * <go-snap position="bottom-right" theme="dark"></go-snap>
  * ```
  */
-export class ProUIFeedbacksElement extends HTMLElement {
+export class GoSnapElement extends HTMLElement {
   private root: Root | null = null
   private shadowContainer: HTMLDivElement | null = null
 
@@ -59,10 +59,10 @@ export class ProUIFeedbacksElement extends HTMLElement {
     if (!this.root || !this.shadowContainer) return
 
     const props = this.getProps()
-    this.root.render(React.createElement(ProUIFeedbacks, props))
+    this.root.render(React.createElement(GoSnap, props))
   }
 
-  private getProps(): ProUIFeedbacksProps {
+  private getProps(): GoSnapProps {
     // Parse attributes to React props
     const position = (this.getAttribute('position') || 'bottom-right') as ToolbarPosition
     const theme = (this.getAttribute('theme') || 'dark') as ToolbarTheme

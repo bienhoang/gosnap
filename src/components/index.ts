@@ -1,1 +1,1 @@
-export { ProUIFeedbacks } from './pro-ui-feedbacks'
+export { GoSnap } from './gosnap'

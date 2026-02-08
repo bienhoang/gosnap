@@ -1,14 +1,14 @@
 {
-  "name": "pro-ui-feedbacks",
+  "name": "gosnap",
   "author": "Bien Hoang <me@bienhoang.xyz>",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "description": "Annotate any website, generate structured visual feedback for AI agents — works as React component or standalone embed",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "pro-ui-feedbacks": "./dist/cli.js"
+    "gosnap": "./dist/cli.js"
   },
   "unpkg": "./dist/embed.global.js",
   "jsdelivr": "./dist/embed.global.js",
@@ -55,6 +55,7 @@
     "typescript": "^5.7.0"
   },
   "keywords": [
+    "gosnap",
     "ai-feedback",
     "ai-agent",
     "visual-feedback",
@@ -76,11 +77,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bienhoang/pro-ui-feedbacks.git"
+    "url": "git+https://github.com/bienhoang/gosnap.git"
   },
-  "homepage": "https://github.com/bienhoang/pro-ui-feedbacks#readme",
+  "homepage": "https://github.com/bienhoang/gosnap#readme",
   "bugs": {
-    "url": "https://github.com/bienhoang/pro-ui-feedbacks/issues"
+    "url": "https://github.com/bienhoang/gosnap/issues"
   },
   "sideEffects": false
 }

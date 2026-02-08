@@ -1,6 +1,6 @@
-export { ProUIFeedbacks } from './components/pro-ui-feedbacks'
+export { GoSnap } from './components/gosnap'
 export type {
-  ProUIFeedbacksProps,
+  GoSnapProps,
   InspectedElement,
   ElementMetadata,
   ElementAccessibility,
@@ -18,5 +18,4 @@ export type {
   SyncEventType,
   SyncPayload,
   SyncFeedbackData,
-  SyncElementData,
 } from './types'

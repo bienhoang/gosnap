@@ -57,7 +57,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md pro-ui-feedbacks-*.tgz
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md gosnap-*.tgz
 
       - name: Publish to npm
         run: npm publish --provenance --access public

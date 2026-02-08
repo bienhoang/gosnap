@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/logo/og-image.png" alt="pro-ui-feedbacks" width="480" />
+  <img src="assets/images/logo/og-image.png" alt="gosnap" width="480" />
 </p>
 
 <p align="center">
@@ -8,11 +8,11 @@
   Lightweight widget for any website: React, Next.js, Vue, HTML, WordPress, and more.
 </p>
 
-![npm version](https://img.shields.io/npm/v/pro-ui-feedbacks)
-![bundle size](https://img.shields.io/bundlephobia/minzip/pro-ui-feedbacks)
-![license](https://img.shields.io/npm/l/pro-ui-feedbacks)
+![npm version](https://img.shields.io/npm/v/gosnap)
+![bundle size](https://img.shields.io/bundlephobia/minzip/gosnap)
+![license](https://img.shields.io/npm/l/gosnap)
 
-## Why pro-ui-feedbacks?
+## Why GoSnap?
 
 Screenshots lack context. Text descriptions are ambiguous. AI agents need **structured data** to act on your UI feedback.
 
@@ -21,7 +21,7 @@ Screenshots lack context. Text descriptions are ambiguous. AI agents need **stru
 | Screenshot | Pixels | No selectors, no DOM structure — AI guesses |
 | Copy HTML from DevTools | Raw markup | Too much noise, no annotations |
 | Text description | "the blue button on the right" | Ambiguous, no coordinates |
-| **pro-ui-feedbacks** | **CSS selector + DOM path + metadata + annotation + order** | **Nothing — structured & actionable** |
+| **GoSnap** | **CSS selector + DOM path + metadata + annotation + order** | **Nothing — structured & actionable** |
 
 ## How It Works
 
@@ -69,19 +69,19 @@ Switch to **debug mode** for even richer output: full DOM paths, computed styles
 ## Get Started — React
 
 ```bash
-npm install pro-ui-feedbacks lucide-react
+npm install gosnap lucide-react
 ```
 
 > `react` and `react-dom` (v18 or v19) are required as peer dependencies.
 
 ```tsx
-import { ProUIFeedbacks } from 'pro-ui-feedbacks'
+import { GoSnap } from 'gosnap'
 
 function App() {
   return (
     <>
       {/* your app */}
-      <ProUIFeedbacks
+      <GoSnap
         onFeedbackSubmit={(fb) => console.log('New feedback:', fb)}
         onFeedbackDelete={(id) => console.log('Deleted:', id)}
       />
@@ -99,16 +99,16 @@ Drop a single script tag on any site — HTML, WordPress, Vue, Angular, or anyth
 ### Web Component
 
 ```html
-<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
-<pro-ui-feedbacks position="bottom-right" theme="dark" persist></pro-ui-feedbacks>
+<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<go-snap position="bottom-right" theme="dark" persist></go-snap>
 ```
 
 ### Imperative API
 
 ```html
-<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
 <script>
-  const widget = ProUIFeedbacks.init({
+  const widget = GoSnap.init({
     position: 'bottom-right',
     theme: 'dark',
     persist: 'my-session'
@@ -131,7 +131,7 @@ Drop a single script tag on any site — HTML, WordPress, Vue, Angular, or anyth
 ### Events (Custom Element)
 
 ```javascript
-const widget = document.querySelector('pro-ui-feedbacks');
+const widget = document.querySelector('go-snap');
 
 widget.addEventListener('toggle', (e) => console.log('Active:', e.detail.active));
 widget.addEventListener('feedback-submit', (e) => console.log('Feedback:', e.detail.feedback));
@@ -143,9 +143,9 @@ widget.addEventListener('copy', () => console.log('Copied'));
 
 ```html
 <!-- Add to theme footer or Custom HTML widget -->
-<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
 <script>
-  ProUIFeedbacks.init({
+  GoSnap.init({
     position: 'bottom-right',
     theme: 'dark',
     persist: 'wp-feedback'
@@ -301,7 +301,7 @@ Drag to select multiple elements and annotate them as a group:
 ### Light theme, top-left
 
 ```tsx
-<ProUIFeedbacks position="top-left" theme="light" />
+<GoSnap position="top-left" theme="light" />
 ```
 
 ### Collect all feedbacks on submit
@@ -312,7 +312,7 @@ function ReviewPage() {
 
   return (
     <>
-      <ProUIFeedbacks
+      <GoSnap
         onFeedbackSubmit={(fb) => feedbacks.current.push(fb)}
         onCopy={() => {
           const data = feedbacks.current.map((fb) => ({
@@ -332,10 +332,10 @@ function ReviewPage() {
 
 ```tsx
 // Auto per-page key (based on pathname)
-<ProUIFeedbacks persist />
+<GoSnap persist />
 
 // Custom storage key
-<ProUIFeedbacks persist="my-review-session" />
+<GoSnap persist="my-review-session" />
 ```
 
 When `persist` is enabled, feedbacks are saved to `localStorage` and restored on page reload. If a target element can no longer be found in the DOM, its marker is displayed as an orphan with a warning indicator.
@@ -345,7 +345,7 @@ When `persist` is enabled, feedbacks are saved to `localStorage` and restored on
 ```tsx
 import { Bug } from 'lucide-react'
 
-<ProUIFeedbacks triggerIcon={<Bug size={18} />} />
+<GoSnap triggerIcon={<Bug size={18} />} />
 ```
 
 ## Compatibility
@@ -371,7 +371,7 @@ Auto-sync feedbacks to [Vibe Kanban](https://github.com/BloopAI/vibe-kanban) as 
 ```
 Browser (your app)                CLI bridge (your terminal)           Vibe Kanban
 ┌──────────────────┐  HTTP POST  ┌──────────────────────┐  MCP stdio  ┌────────┐
-│  Widget with      │ ────────→  │  npx pro-ui-feedbacks │ ──────────→ │  Board  │
+│  Widget with      │ ────────→  │  npx gosnap           │ ──────────→ │  Board  │
 │  syncUrl prop     │  :3456     │  --sync-vk            │             │  Tasks  │
 └──────────────────┘             └──────────────────────┘             └────────┘
 ```
@@ -390,7 +390,7 @@ The widget **cannot** talk to Vibe Kanban directly (MCP requires a Node.js proce
 **Step 1 — Start the bridge** (keep this terminal open):
 
 ```bash
-npx pro-ui-feedbacks --sync-vk
+npx gosnap --sync-vk
 ```
 
 You should see:
@@ -409,7 +409,7 @@ You should see:
 <summary><strong>React</strong></summary>
 
 ```tsx
-<ProUIFeedbacks syncUrl="http://localhost:3456/webhook" />
+<GoSnap syncUrl="http://localhost:3456/webhook" />
 ```
 </details>
 
@@ -417,7 +417,7 @@ You should see:
 <summary><strong>Web Component</strong></summary>
 
 ```html
-<pro-ui-feedbacks sync-url="http://localhost:3456/webhook"></pro-ui-feedbacks>
+<go-snap sync-url="http://localhost:3456/webhook"></go-snap>
 ```
 </details>
 
@@ -425,9 +425,9 @@ You should see:
 <summary><strong>Imperative API</strong></summary>
 
 ```html
-<script src="https://unpkg.com/pro-ui-feedbacks/dist/embed.global.js"></script>
+<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
 <script>
-  ProUIFeedbacks.init({ syncUrl: 'http://localhost:3456/webhook' });
+  GoSnap.init({ syncUrl: 'http://localhost:3456/webhook' });
 </script>
 ```
 </details>
@@ -443,7 +443,7 @@ You should see:
 
 ```tsx
 // Batch mode: feedbacks sync when you hit Copy
-<ProUIFeedbacks syncUrl="http://localhost:3456/webhook" syncMode="batch" />
+<GoSnap syncUrl="http://localhost:3456/webhook" syncMode="batch" />
 ```
 
 ### Optional: Sync Deletes & Edits
@@ -451,7 +451,7 @@ You should see:
 By default, only new feedbacks sync. Enable delete/edit sync with flags:
 
 ```tsx
-<ProUIFeedbacks
+<GoSnap
   syncUrl="http://localhost:3456/webhook"
   syncDelete  // deleting a feedback also deletes the VK task
   syncUpdate  // editing a feedback updates the VK task title
@@ -474,14 +474,109 @@ By default, only new feedbacks sync. Enable delete/edit sync with flags:
 
 | Problem | Solution |
 |---------|----------|
-| `Failed to fetch` in console | Bridge not running. Start it: `npx pro-ui-feedbacks --sync-vk` |
+| `Failed to fetch` in console | Bridge not running. Start it: `npx gosnap --sync-vk` |
 | `No Vibe Kanban projects found` | Create a VK project first: `npx vibe-kanban@latest` |
-| Wrong project selected | Specify project: `npx pro-ui-feedbacks --sync-vk --project <id>` |
+| Wrong project selected | Specify project: `npx gosnap --sync-vk --project <id>` |
 | Port conflict | Use a different port: `--port 4000` and update `syncUrl` accordingly |
+
+## MCP Server Sync
+
+Auto-sync feedbacks to the **[gosnap-mcp](https://github.com/bienhoang/gosnap-mcp)** server so AI agents (Claude, Cursor, Copilot, Windsurf) can read, acknowledge, and resolve feedbacks directly.
+
+### How It Works
+
+```
+Browser (your app)                          MCP Server
+┌──────────────────┐  HTTP POST :4747  ┌──────────────────────┐    stdio     ┌───────────┐
+│  Widget with      │ ────────────────→ │  gosnap-mcp │ ←──────────→ │  AI Agent  │
+│  syncUrl prop     │  /api/webhook    │  (HTTP + MCP)         │   JSON-RPC   │  (Claude)  │
+└──────────────────┘                   └──────────────────────┘              └───────────┘
+```
+
+The widget posts feedbacks to the MCP server's webhook endpoint. AI agents connect to the same server via MCP stdio protocol to read and act on feedbacks.
+
+### Setup (2 steps)
+
+**Step 1 — Start the MCP server:**
+
+```bash
+npx gosnap-mcp server
+```
+
+You should see:
+```
+HTTP server listening on http://127.0.0.1:4747
+MCP server ready (stdio)
+```
+
+**Step 2 — Point your widget to the server:**
+
+<details>
+<summary><strong>React</strong></summary>
+
+```tsx
+<GoSnap
+  syncUrl="http://localhost:4747/api/webhook"
+  syncDelete
+  syncUpdate
+/>
+```
+</details>
+
+<details>
+<summary><strong>Web Component</strong></summary>
+
+```html
+<go-snap
+  sync-url="http://localhost:4747/api/webhook"
+  sync-delete
+  sync-update
+></go-snap>
+```
+</details>
+
+<details>
+<summary><strong>Imperative API</strong></summary>
+
+```html
+<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script>
+  GoSnap.init({
+    syncUrl: 'http://localhost:4747/api/webhook',
+    syncDelete: true,
+    syncUpdate: true
+  });
+</script>
+```
+</details>
+
+That's it — feedbacks now flow to the MCP server. Configure your AI agent to connect to `gosnap-mcp` and it can list, acknowledge, resolve, and dismiss feedbacks.
+
+### AI Agent Configuration
+
+Run the init command to auto-configure your AI agents:
+
+```bash
+npx gosnap-mcp init
+```
+
+This adds the MCP server to Claude Desktop, Cursor, Windsurf, and other supported agents.
+
+### MCP vs Vibe Kanban Sync
+
+| | MCP Server Sync | Vibe Kanban Sync |
+|---|---|---|
+| **Purpose** | AI agents read & act on feedbacks | Feedbacks become kanban tasks |
+| **Bridge needed** | No (direct HTTP) | Yes (`--sync-vk` CLI) |
+| **Port** | `4747` | `3456` |
+| **AI access** | Native MCP tools | Via Vibe Kanban MCP |
+| **Best for** | AI-driven UI fixes | Project management |
+
+Both can be used simultaneously with different `syncUrl` values or by running the VK bridge alongside the MCP server.
 
 ## Roadmap
 
-- [ ] MCP (Model Context Protocol) server — AI agents read feedbacks directly
+- [x] MCP (Model Context Protocol) server — AI agents read feedbacks directly
 - [x] Webhook integration — push feedbacks to any endpoint
 - [ ] JSON output format — alongside markdown
 - [x] CLI tool — capture feedbacks from terminal
@@ -489,8 +584,8 @@ By default, only new feedbacks sync. Enable delete/edit sync with flags:
 ## Development
 
 ```bash
-git clone https://github.com/bienhoang/pro-ui-feedbacks.git
-cd pro-ui-feedbacks
+git clone https://github.com/bienhoang/gosnap.git
+cd gosnap
 npm install
 
 npm run dev      # watch mode

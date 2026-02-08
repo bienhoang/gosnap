@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for your interest in contributing to **pro-ui-feedbacks**!
+Thanks for your interest in contributing to **GoSnap**!
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/bienhoang/pro-ui-feedbacks.git
-cd pro-ui-feedbacks
+git clone https://github.com/bienhoang/gosnap.git
+cd gosnap
 npm install
 npm run dev
 ```
@@ -21,7 +21,7 @@ src/
 ├── types.ts                          # shared TypeScript types
 ├── styles.ts                         # all inline style helpers
 ├── components/
-│   ├── pro-ui-feedbacks.tsx          # main component
+│   ├── gosnap.tsx                    # main component
 │   ├── toolbar-button.tsx            # individual toolbar button
 │   ├── smart-inspector-overlay.tsx   # hover highlight + tooltip
 │   ├── feedback-popover.tsx          # annotation input form

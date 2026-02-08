@@ -1,5 +1,5 @@
 /**
- * Embeddable entry point for pro-ui-feedbacks
+ * Embeddable entry point for GoSnap
  *
  * Self-contained IIFE bundle (~21KB gzip) with React bundled.
  * Works on any website without npm/bundler.
@@ -7,26 +7,26 @@
  * @example Web Component API
  * ```html
  * <script src="embed.global.js"></script>
- * <pro-ui-feedbacks position="bottom-right" theme="dark"></pro-ui-feedbacks>
+ * <go-snap position="bottom-right" theme="dark"></go-snap>
  * ```
  *
  * @example Imperative API
  * ```html
  * <script src="embed.global.js"></script>
  * <script>
- *   const widget = ProUIFeedbacks.init({ position: 'bottom-left', theme: 'light' });
+ *   const widget = GoSnap.init({ position: 'bottom-left', theme: 'light' });
  *   // Later: widget.destroy();
  * </script>
  * ```
  */
 
-import { ProUIFeedbacksElement } from './web-component'
+import { GoSnapElement } from './web-component'
 import type { ToolbarPosition, ToolbarTheme } from './types'
 
 // Re-export component and types for advanced usage
-export { ProUIFeedbacks } from './components/pro-ui-feedbacks'
+export { GoSnap } from './components/gosnap'
 export type {
-  ProUIFeedbacksProps,
+  GoSnapProps,
   InspectedElement,
   ElementMetadata,
   ElementAccessibility,
@@ -43,11 +43,11 @@ export type {
 // Web Component Registration
 // ============================================
 
-const ELEMENT_NAME = 'pro-ui-feedbacks'
+const ELEMENT_NAME = 'go-snap'
 
 // Register custom element (only once)
 if (typeof window !== 'undefined' && !customElements.get(ELEMENT_NAME)) {
-  customElements.define(ELEMENT_NAME, ProUIFeedbacksElement)
+  customElements.define(ELEMENT_NAME, GoSnapElement)
 }
 
 // ============================================
@@ -79,7 +79,7 @@ export interface InitOptions {
 
 export interface WidgetInstance {
   /** The custom element instance */
-  element: ProUIFeedbacksElement
+  element: GoSnapElement
   /** Remove the widget from DOM */
   destroy: () => void
 }
@@ -108,11 +108,11 @@ export function init(options: InitOptions = {}): WidgetInstance {
     typeof container === 'string' ? document.querySelector(container) : container
 
   if (!targetContainer) {
-    throw new Error(`[pro-ui-feedbacks] Container not found: ${container}`)
+    throw new Error(`[gosnap] Container not found: ${container}`)
   }
 
   // Create and configure element
-  const element = document.createElement(ELEMENT_NAME) as ProUIFeedbacksElement
+  const element = document.createElement(ELEMENT_NAME) as GoSnapElement
   element.setAttribute('position', position)
   element.setAttribute('theme', theme)
   element.setAttribute('z-index', String(zIndex))

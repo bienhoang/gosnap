@@ -23,7 +23,7 @@ export default defineConfig([
   {
     entry: { embed: 'src/embed.ts' },
     format: ['iife'],
-    globalName: 'ProUIFeedbacks',
+    globalName: 'GoSnap',
     outDir: 'dist',
     splitting: false,
     sourcemap: true,

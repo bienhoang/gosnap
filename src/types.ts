@@ -219,7 +219,7 @@ export interface SyncConfig {
 // COMPONENT PROPS
 // =============================================================================
 
-export interface ProUIFeedbacksProps extends SyncConfig {
+export interface GoSnapProps extends SyncConfig {
   /** Callback when Start/Stop is toggled */
   onToggle?: (active: boolean) => void
   /** Callback when an element is selected via inspector */

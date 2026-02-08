@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Menu, Play, Pause, MessageSquare, Copy, Check, Trash2, Settings, X } from '../icons'
-import type { ProUIFeedbacksProps } from '../types'
+import type { GoSnapProps } from '../types'
 import {
   getContainerStyle,
   getToolbarStyle,
@@ -32,7 +32,7 @@ import { PortalContext } from '../contexts/portal-context'
 
 const ICON_SIZE = 16
 
-export function ProUIFeedbacks({
+export function GoSnap({
   onToggle,
   onInspect,
   onFeedbackSubmit,
@@ -57,7 +57,7 @@ export function ProUIFeedbacks({
   syncUpdate,
   onSyncSuccess,
   onSyncError,
-}: ProUIFeedbacksProps) {
+}: GoSnapProps) {
   const [active, setActive] = useState(false)
   const [triggerHovered, setTriggerHovered] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -267,7 +267,7 @@ export function ProUIFeedbacks({
     <div ref={toolbarRef} style={containerStyle}>
       <div
         role="toolbar"
-        aria-label="Pro UI Feedbacks"
+        aria-label="GoSnap"
         aria-orientation="horizontal"
         style={getToolbarStyle(theme, expanded)}
         onKeyDown={handleKeyDown}

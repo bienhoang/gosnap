@@ -68,7 +68,7 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
     if (target.closest?.('[data-smart-inspector]')) return true
     // Check if target is inside a shadow host with our tag name
     const host = target.getRootNode() as ShadowRoot | Document
-    if (host instanceof ShadowRoot && host.host?.tagName?.toLowerCase() === 'pro-ui-feedbacks') {
+    if (host instanceof ShadowRoot && host.host?.tagName?.toLowerCase() === 'go-snap') {
       return true
     }
     return false
