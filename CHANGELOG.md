@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Rebranded from `pro-ui-feedbacks` to `gosnap`** — new npm package name, component exports, web component tag, CLI, and GitHub repo
+- **Rebranded from `pro-ui-feedbacks` to `@optimo/gosnap`** — new npm package name, component exports, web component tag, CLI, and GitHub repo
 - React component: `<ProUIFeedbacks />` → `<GoSnap />`
 - Web component: `<pro-ui-feedbacks>` → `<go-snap>`
 - Imperative API: `ProUIFeedbacks.init()` → `GoSnap.init()`
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking
 
-- Package renamed from `pro-ui-feedbacks` to `gosnap`
+- Package renamed from `pro-ui-feedbacks` to `@optimo/gosnap`
 - All exports renamed — update imports accordingly
 - Web component tag changed — update HTML usage
 

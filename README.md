@@ -8,9 +8,9 @@
   Lightweight widget for any website: React, Next.js, Vue, HTML, WordPress, and more.
 </p>
 
-![npm version](https://img.shields.io/npm/v/gosnap)
-![bundle size](https://img.shields.io/bundlephobia/minzip/gosnap)
-![license](https://img.shields.io/npm/l/gosnap)
+![npm version](https://img.shields.io/npm/v/@optimo/gosnap)
+![bundle size](https://img.shields.io/bundlephobia/minzip/@optimo/gosnap)
+![license](https://img.shields.io/npm/l/@optimo/gosnap)
 
 ## Why GoSnap?
 
@@ -69,13 +69,13 @@ Switch to **debug mode** for even richer output: full DOM paths, computed styles
 ## Get Started — React
 
 ```bash
-npm install gosnap lucide-react
+npm install @optimo/gosnap lucide-react
 ```
 
 > `react` and `react-dom` (v18 or v19) are required as peer dependencies.
 
 ```tsx
-import { GoSnap } from 'gosnap'
+import { GoSnap } from '@optimo/gosnap'
 
 function App() {
   return (
@@ -99,14 +99,14 @@ Drop a single script tag on any site — HTML, WordPress, Vue, Angular, or anyth
 ### Web Component
 
 ```html
-<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script src="https://unpkg.com/@optimo/gosnap/dist/embed.global.js"></script>
 <go-snap position="bottom-right" theme="dark" persist></go-snap>
 ```
 
 ### Imperative API
 
 ```html
-<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script src="https://unpkg.com/@optimo/gosnap/dist/embed.global.js"></script>
 <script>
   const widget = GoSnap.init({
     position: 'bottom-right',
@@ -143,7 +143,7 @@ widget.addEventListener('copy', () => console.log('Copied'));
 
 ```html
 <!-- Add to theme footer or Custom HTML widget -->
-<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script src="https://unpkg.com/@optimo/gosnap/dist/embed.global.js"></script>
 <script>
   GoSnap.init({
     position: 'bottom-right',
@@ -371,7 +371,7 @@ Auto-sync feedbacks to [Vibe Kanban](https://github.com/BloopAI/vibe-kanban) as 
 ```
 Browser (your app)                CLI bridge (your terminal)           Vibe Kanban
 ┌──────────────────┐  HTTP POST  ┌──────────────────────┐  MCP stdio  ┌────────┐
-│  Widget with      │ ────────→  │  npx gosnap           │ ──────────→ │  Board  │
+│  Widget with      │ ────────→  │  npx @optimo/gosnap   │ ──────────→ │  Board  │
 │  syncUrl prop     │  :3456     │  --sync-vk            │             │  Tasks  │
 └──────────────────┘             └──────────────────────┘             └────────┘
 ```
@@ -390,7 +390,7 @@ The widget **cannot** talk to Vibe Kanban directly (MCP requires a Node.js proce
 **Step 1 — Start the bridge** (keep this terminal open):
 
 ```bash
-npx gosnap --sync-vk
+npx @optimo/gosnap --sync-vk
 ```
 
 You should see:
@@ -425,7 +425,7 @@ You should see:
 <summary><strong>Imperative API</strong></summary>
 
 ```html
-<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script src="https://unpkg.com/@optimo/gosnap/dist/embed.global.js"></script>
 <script>
   GoSnap.init({ syncUrl: 'http://localhost:3456/webhook' });
 </script>
@@ -474,9 +474,9 @@ By default, only new feedbacks sync. Enable delete/edit sync with flags:
 
 | Problem | Solution |
 |---------|----------|
-| `Failed to fetch` in console | Bridge not running. Start it: `npx gosnap --sync-vk` |
+| `Failed to fetch` in console | Bridge not running. Start it: `npx @optimo/gosnap --sync-vk` |
 | `No Vibe Kanban projects found` | Create a VK project first: `npx vibe-kanban@latest` |
-| Wrong project selected | Specify project: `npx gosnap --sync-vk --project <id>` |
+| Wrong project selected | Specify project: `npx @optimo/gosnap --sync-vk --project <id>` |
 | Port conflict | Use a different port: `--port 4000` and update `syncUrl` accordingly |
 
 ## MCP Server Sync
@@ -539,7 +539,7 @@ MCP server ready (stdio)
 <summary><strong>Imperative API</strong></summary>
 
 ```html
-<script src="https://unpkg.com/gosnap/dist/embed.global.js"></script>
+<script src="https://unpkg.com/@optimo/gosnap/dist/embed.global.js"></script>
 <script>
   GoSnap.init({
     syncUrl: 'http://localhost:4747/api/webhook',
