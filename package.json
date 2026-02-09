@@ -1,7 +1,7 @@
 {
   "name": "gosnap-widget",
   "author": "Bien Hoang <me@bienhoang.xyz>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Annotate any website, generate structured visual feedback for AI agents — works as React component or standalone embed",
   "type": "module",
   "main": "./dist/index.cjs",
