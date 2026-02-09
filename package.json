@@ -1,5 +1,5 @@
 {
-  "name": "@bienhoang/gosnap",
+  "name": "gosnap-widget",
   "author": "Bien Hoang <me@bienhoang.xyz>",
   "version": "1.0.0",
   "description": "Annotate any website, generate structured visual feedback for AI agents — works as React component or standalone embed",
