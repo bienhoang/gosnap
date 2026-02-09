@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="grad" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <!-- Speech bubble body -->
+  <path d="M256 56C148.8 56 62 132.8 62 228c0 42.4 17.6 81.2 47.2 112L82 410c-3.6 9.2 5.6 18 14.6 13.8l88-44c22 8.4 46.4 13 71.4 13 107.2 0 194-76.8 194-172S363.2 56 256 56Z" fill="url(#grad)"/>
+  <!-- Crosshair ring -->
+  <circle cx="256" cy="220" r="80" stroke="#fff" stroke-width="22" fill="none"/>
+  <!-- Crosshair lines -->
+  <line x1="256" y1="116" x2="256" y2="162" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <line x1="256" y1="278" x2="256" y2="324" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <line x1="152" y1="220" x2="198" y2="220" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <line x1="314" y1="220" x2="360" y2="220" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="220" r="12" fill="#fff"/>
+</svg>
