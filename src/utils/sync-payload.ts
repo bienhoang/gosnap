@@ -14,6 +14,9 @@ function serializeElement(el: InspectedElement): SyncElementData {
     accessibility: el.metadata?.accessibility
       ? { role: el.metadata.accessibility.role, label: el.metadata.accessibility.label }
       : undefined,
+    componentName: el.componentInfo?.name,
+    componentTree: el.componentInfo?.treePath,
+    componentProps: el.componentInfo?.props,
   }
 }
 

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { InspectedElement, AreaBounds, InspectAreaEvent } from '../types'
+import type { InspectedElement, AreaBounds, InspectAreaEvent, InspectMode, ComponentInfo } from '../types'
 import { buildInspectedElement } from '../utils/element-metadata'
 import { normalizeArea, getElementsInArea } from '../utils/element-intersection'
+import { buildComponentInfo } from '../utils/react-fiber'
 
 /** Minimum distance (px) to differentiate drag from click */
 const DRAG_THRESHOLD = 5
@@ -32,6 +33,8 @@ interface DragState {
 
 interface UseSmartInspectorOptions {
   active: boolean
+  /** Inspection mode: 'dom' (default) or 'component' (React X-Ray) */
+  inspectMode?: InspectMode
   onInspect?: (element: InspectedElement) => void
   /** Enhanced callback with click coordinates for feedback positioning */
   onInspectClick?: (event: InspectClickEvent) => void
@@ -46,11 +49,31 @@ function buildInspectedElements(elements: HTMLElement[]): InspectedElement[] {
   return elements.map(buildInspectedElement)
 }
 
-export function useSmartInspector({ active, onInspect, onInspectClick, onInspectArea, excludeRef }: UseSmartInspectorOptions) {
+/** Enrich InspectedElement with React component info; override rect with component boundary */
+function enrichWithComponentInfo(inspected: InspectedElement, cache: WeakMap<HTMLElement, ComponentInfo | null>): void {
+  const el = inspected.element
+  let info: ComponentInfo | null | undefined = cache.get(el)
+  if (info === undefined) {
+    info = buildComponentInfo(el)
+    cache.set(el, info)
+  }
+  if (info) {
+    inspected.componentInfo = info
+    // Override rect and dimensions with component boundary
+    inspected.rect = info.boundary
+    inspected.dimensions = {
+      width: Math.round(info.boundary.width),
+      height: Math.round(info.boundary.height),
+    }
+  }
+}
+
+export function useSmartInspector({ active, inspectMode, onInspect, onInspectClick, onInspectArea, excludeRef }: UseSmartInspectorOptions) {
   const [hoveredElement, setHoveredElement] = useState<InspectedElement | null>(null)
   const [dragArea, setDragArea] = useState<DragArea | null>(null)
   const rafRef = useRef<number>(0)
   const dragRef = useRef<DragState | null>(null)
+  const fiberCacheRef = useRef(new WeakMap<HTMLElement, ComponentInfo | null>())
 
   /** Get actual event target, handling Shadow DOM retargeting */
   const getActualTarget = useCallback((e: MouseEvent): HTMLElement | null => {
@@ -113,9 +136,13 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
         setHoveredElement(null)
         return
       }
-      setHoveredElement(buildInspectedElement(target))
+      const inspected = buildInspectedElement(target)
+      if (inspectMode === 'component') {
+        enrichWithComponentInfo(inspected, fiberCacheRef.current)
+      }
+      setHoveredElement(inspected)
     })
-  }, [excludeRef, isInsideWidget])
+  }, [excludeRef, isInsideWidget, inspectMode])
 
   /** Handle mouse down to start potential drag */
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -165,11 +192,14 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
       const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
       if (el && el !== document.documentElement && el !== document.body && !isInsideWidget(el)) {
         const inspected = buildInspectedElement(el)
+        if (inspectMode === 'component') {
+          enrichWithComponentInfo(inspected, fiberCacheRef.current)
+        }
         onInspect?.(inspected)
         onInspectClick?.({ element: inspected, clickX: e.clientX, clickY: e.clientY })
       }
     }
-  }, [excludeRef, getActualTarget, isInsideWidget, onInspect, onInspectClick, onInspectArea])
+  }, [excludeRef, getActualTarget, isInsideWidget, onInspect, onInspectClick, onInspectArea, inspectMode])
 
   /** Clear drag state if mouse leaves window */
   const handleMouseLeave = useCallback(() => {
@@ -204,6 +234,11 @@ export function useSmartInspector({ active, onInspect, onInspectClick, onInspect
       document.removeEventListener('mouseleave', handleMouseLeave)
     }
   }, [active, handleMouseMove, handleMouseDown, handleMouseUp, handleMouseLeave])
+
+  // Clear fiber cache when inspect mode changes
+  useEffect(() => {
+    fiberCacheRef.current = new WeakMap()
+  }, [inspectMode])
 
   return { hoveredElement, dragArea }
 }

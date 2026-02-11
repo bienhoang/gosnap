@@ -6,9 +6,9 @@
 import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { GoSnap } from './components/gosnap'
-import type { GoSnapProps, ToolbarPosition, ToolbarTheme, SyncMode } from './types'
+import type { GoSnapProps, ToolbarPosition, ToolbarTheme, SyncMode, InspectMode } from './types'
 
-const OBSERVED_ATTRS = ['position', 'theme', 'z-index', 'collapsed', 'persist', 'sync-url', 'sync-mode', 'sync-delete', 'sync-update'] as const
+const OBSERVED_ATTRS = ['position', 'theme', 'z-index', 'collapsed', 'persist', 'sync-url', 'sync-mode', 'sync-delete', 'sync-update', 'inspect-mode'] as const
 
 /**
  * Custom Element that wraps GoSnap React component
@@ -75,6 +75,7 @@ export class GoSnapElement extends HTMLElement {
     const syncMode = (this.getAttribute('sync-mode') || undefined) as SyncMode | undefined
     const syncDelete = this.getAttribute('sync-delete') === 'true'
     const syncUpdate = this.getAttribute('sync-update') === 'true'
+    const inspectMode = (this.getAttribute('inspect-mode') || undefined) as InspectMode | undefined
 
     return {
       position,
@@ -87,6 +88,7 @@ export class GoSnapElement extends HTMLElement {
       syncMode,
       syncDelete,
       syncUpdate,
+      defaultInspectMode: inspectMode,
       // Portal container for Shadow DOM rendering
       portalContainer: this.shadowContainer!,
       // Callback wrappers that dispatch CustomEvents

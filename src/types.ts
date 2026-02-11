@@ -4,6 +4,9 @@ export type ToolbarPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'to
 
 export type ToolbarTheme = 'dark' | 'light'
 
+/** Inspection mode: DOM-level or React component-level */
+export type InspectMode = 'dom' | 'component'
+
 /** Accessibility info extracted from the element */
 export interface ElementAccessibility {
   role?: string
@@ -47,6 +50,36 @@ export interface InspectedElement {
   dimensions: { width: number; height: number }
   /** Rich metadata about the element */
   metadata: ElementMetadata
+  /** React component info (present only in component inspect mode) */
+  componentInfo?: ComponentInfo
+}
+
+/** React component info extracted from Fiber internals */
+export interface ComponentInfo {
+  /** Component name (may be minified in production) */
+  name: string
+  /** Display name if set (e.g., via Component.displayName) */
+  displayName?: string
+  /** Source file location (development builds only) */
+  source?: { fileName: string; lineNumber: number }
+  /** Serialized props (smart-truncated, security-filtered) */
+  props: Record<string, string>
+  /** Component tree breadcrumb from root, e.g. ['App', 'Layout', 'Card'] */
+  treePath: string[]
+  /** Union bounding box of all DOM nodes rendered by this component */
+  boundary: DOMRect
+  /** True if name appears to be minified (production build) */
+  isMinified?: boolean
+}
+
+/** React framework detection result */
+export interface ReactDetection {
+  /** Whether React was detected on the page */
+  detected: boolean
+  /** React version string if detected */
+  version?: string
+  /** Whether development mode is detected (presence of _debugSource) */
+  isDev?: boolean
 }
 
 /** Metadata for area (drag) selection */
@@ -165,6 +198,12 @@ export interface SyncElementData {
   elementDescription?: string
   boundingBox?: { x: number; y: number; width: number; height: number }
   accessibility?: { role?: string; label?: string }
+  /** Component name (if inspected in component mode) */
+  componentName?: string
+  /** Component tree path */
+  componentTree?: string[]
+  /** Serialized component props */
+  componentProps?: Record<string, string>
 }
 
 /** Single feedback in sync payload */
@@ -254,4 +293,6 @@ export interface GoSnapProps extends SyncConfig {
   persist?: boolean | string
   /** Custom portal container for rendering overlays (used by Web Component) */
   portalContainer?: HTMLElement
+  /** Default inspection mode ('dom' or 'component'). Default: 'dom' */
+  defaultInspectMode?: InspectMode
 }

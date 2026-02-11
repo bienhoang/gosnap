@@ -12,6 +12,7 @@ export {
   Pause,
   Pencil,
   Play,
+  ScanEye,
   Send,
   Settings,
   Sun,

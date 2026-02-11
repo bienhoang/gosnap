@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { usePortalContainer } from '../contexts/portal-context'
-import type { InspectedElement, ToolbarTheme } from '../types'
+import type { InspectedElement, ToolbarTheme, InspectMode } from '../types'
 import type { DragArea } from '../hooks/use-smart-inspector'
 import { getElementsInArea } from '../utils/element-intersection'
 import {
@@ -9,10 +9,20 @@ import {
   getInspectorTooltipStyle,
   getInspectorTooltipTextStyle,
   getInspectorTooltipDimStyle,
+  getComponentHighlightStyle,
+  getComponentTooltipNameStyle,
+  getComponentTooltipSourceStyle,
   getDragSelectionRectStyle,
   getDragElementHighlightStyle,
   getDragCountBadgeStyle,
 } from '../styles'
+
+/** Shorten source path for display: '/app/src/components/Card.tsx' -> 'components/Card.tsx' */
+function formatSourcePath(path: string): string {
+  const cleaned = path.replace(/^(\.\/|\/app\/|\/src\/)/, '')
+  const parts = cleaned.split('/')
+  return parts.length > 3 ? parts.slice(-2).join('/') : cleaned
+}
 
 interface SmartInspectorOverlayProps {
   hoveredElement: InspectedElement | null
@@ -21,12 +31,14 @@ interface SmartInspectorOverlayProps {
   theme: ToolbarTheme
   zIndex: number
   accentColor?: string
+  /** Current inspection mode */
+  inspectMode?: InspectMode
 }
 
 /** Maximum elements to highlight (performance guard) */
 const MAX_HIGHLIGHTED = 50
 
-export function SmartInspectorOverlay({ hoveredElement, dragArea, theme, zIndex, accentColor }: SmartInspectorOverlayProps) {
+export function SmartInspectorOverlay({ hoveredElement, dragArea, theme, zIndex, accentColor, inspectMode }: SmartInspectorOverlayProps) {
   const portalContainer = usePortalContainer()
   const [intersectingElements, setIntersectingElements] = useState<HTMLElement[]>([])
   const frameRef = useRef<number>(0)
@@ -81,20 +93,46 @@ export function SmartInspectorOverlay({ hoveredElement, dragArea, theme, zIndex,
       )}
 
       {/* Single element hover highlight (only when not dragging) */}
-      {hoveredElement && !dragArea && (
-        <>
-          {/* Highlight box */}
-          <div style={getInspectorHighlightStyle(hoveredElement.rect, accentColor)} />
+      {hoveredElement && !dragArea && (() => {
+        const ci = hoveredElement.componentInfo
+        const isComponentMode = inspectMode === 'component' && ci
+        return (
+          <>
+            {/* Highlight box — dashed for component, solid for DOM */}
+            <div style={
+              isComponentMode
+                ? getComponentHighlightStyle(hoveredElement.rect, accentColor)
+                : getInspectorHighlightStyle(hoveredElement.rect, accentColor)
+            } />
 
-          {/* Element info tooltip */}
-          <div style={getInspectorTooltipStyle(hoveredElement.rect, theme)}>
-            <span style={getInspectorTooltipTextStyle(accentColor)}>{hoveredElement.selector}</span>
-            <span style={getInspectorTooltipDimStyle(theme)}>
-              {hoveredElement.dimensions.width} × {hoveredElement.dimensions.height}
-            </span>
-          </div>
-        </>
-      )}
+            {/* Tooltip — component name or CSS selector */}
+            <div style={getInspectorTooltipStyle(hoveredElement.rect, theme)}>
+              {isComponentMode ? (
+                <>
+                  <span style={getComponentTooltipNameStyle(accentColor)}>
+                    {'<'}{ci.name}{' />'}
+                  </span>
+                  {ci.source && (
+                    <span style={getComponentTooltipSourceStyle(theme)}>
+                      {formatSourcePath(ci.source.fileName)}:{ci.source.lineNumber}
+                    </span>
+                  )}
+                  <span style={getInspectorTooltipDimStyle(theme)}>
+                    {hoveredElement.dimensions.width} × {hoveredElement.dimensions.height}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span style={getInspectorTooltipTextStyle(accentColor)}>{hoveredElement.selector}</span>
+                  <span style={getInspectorTooltipDimStyle(theme)}>
+                    {hoveredElement.dimensions.width} × {hoveredElement.dimensions.height}
+                  </span>
+                </>
+              )}
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 

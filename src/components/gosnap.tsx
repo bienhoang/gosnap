@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Menu, Play, Pause, MessageSquare, Copy, Check, Trash2, Settings, X } from '../icons'
-import type { GoSnapProps } from '../types'
+import { Menu, Play, Pause, MessageSquare, Copy, Check, Trash2, Settings, ScanEye, X } from '../icons'
+import type { GoSnapProps, ReactDetection } from '../types'
 import {
   getContainerStyle,
   getToolbarStyle,
@@ -21,6 +21,7 @@ import { useToolbarState } from '../hooks/use-toolbar-state'
 import { usePendingFeedback } from '../hooks/use-pending-feedback'
 import { useMarkerFocus } from '../hooks/use-marker-focus'
 import { useSync } from '../hooks/use-sync'
+import { detectReact } from '../utils/react-fiber'
 import { buildPersistKey } from '../utils/feedback-persistence'
 import { formatDetailed, formatDebug } from '../utils/format-feedbacks'
 import { SmartInspectorOverlay } from './smart-inspector-overlay'
@@ -57,6 +58,7 @@ export function GoSnap({
   syncUpdate,
   onSyncSuccess,
   onSyncError,
+  defaultInspectMode,
 }: GoSnapProps) {
   const [active, setActive] = useState(false)
   const [triggerHovered, setTriggerHovered] = useState(false)
@@ -72,6 +74,34 @@ export function GoSnap({
   const settings = useSettingsStore(themeProp)
   const theme = settings.theme
   const accentColor = settings.markerColor
+
+  // React detection (once on mount, 100ms delay for render settle)
+  const [reactDetection, setReactDetection] = useState<ReactDetection>({ detected: false })
+  useEffect(() => {
+    const timer = setTimeout(() => setReactDetection(detectReact()), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Override stored preference on mount if prop provided
+  useEffect(() => {
+    if (defaultInspectMode) settings.setInspectMode(defaultInspectMode)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effective inspect mode: force 'dom' when React not detected
+  const inspectMode = reactDetection.detected ? settings.inspectMode : 'dom'
+
+  // One-time production warning when switching to component mode
+  const prodWarningShownRef = useRef(false)
+  useEffect(() => {
+    if (inspectMode === 'component' && reactDetection.detected && !reactDetection.isDev && !prodWarningShownRef.current) {
+      prodWarningShownRef.current = true
+      console.info(
+        '[GoSnap] Component X-Ray: Running in production mode. ' +
+        'Component names may be minified and source locations unavailable. ' +
+        'For full component info, use a development build.'
+      )
+    }
+  }, [inspectMode, reactDetection])
 
   const { collapsed, expanded, focusIndex, setFocusIndex, mounted, toggleCollapsed, collapse } = useToolbarState(defaultCollapsed)
 
@@ -118,6 +148,7 @@ export function GoSnap({
   // Smart Inspector hook
   const { hoveredElement, dragArea } = useSmartInspector({
     active: active && !pending.pendingFeedback && !pending.pendingAreaFeedback,
+    inspectMode,
     onInspectClick: pending.handleInspectClick,
     onInspectArea: pending.handleInspectArea,
     excludeRef: toolbarRef,
@@ -179,6 +210,7 @@ export function GoSnap({
   useKeyboardShortcuts({
     'mod+shift+f': { handler: toggleCollapsed },
     'mod+shift+i': { handler: handleToggle, guard: () => expanded },
+    'mod+shift+x': { handler: settings.toggleInspectMode, guard: () => expanded && reactDetection.detected },
     'mod+shift+c': { handler: handleCopy, guard: () => feedbacks.length > 0 },
     'mod+shift+l': { handler: handleFeedbackListToggle, guard: () => expanded },
     'mod+shift+,': { handler: handleSettingsToggle, guard: () => expanded },
@@ -194,6 +226,15 @@ export function GoSnap({
 
   const items = [
     { id: 'toggle', icon: active ? <Pause size={ICON_SIZE} /> : <Play size={ICON_SIZE} />, label: active ? 'Stop' : 'Start', description: active ? 'Deactivate inspector' : 'Activate inspector', shortcut: '⌘⇧I', onClick: handleToggle, active },
+    ...(reactDetection.detected ? [{
+      id: 'xray',
+      icon: <ScanEye size={ICON_SIZE} />,
+      label: inspectMode === 'component' ? 'DOM Mode' : 'X-Ray',
+      description: inspectMode === 'component' ? 'Switch to DOM inspection' : 'Switch to React component inspection',
+      shortcut: '⌘⇧X',
+      onClick: settings.toggleInspectMode,
+      active: inspectMode === 'component',
+    }] : []),
     { id: 'feedback', icon: <MessageSquare size={ICON_SIZE} />, label: `Feedbacks (${feedbacks.length})`, description: 'View feedback list', shortcut: '⌘⇧L', onClick: handleFeedbackListToggle },
     { id: 'copy', icon: copiedRecently ? <Check size={ICON_SIZE} color="#22c55e" /> : <Copy size={ICON_SIZE} />, label: copiedRecently ? 'Copied!' : 'Copy', description: 'Copy all to clipboard', shortcut: '⌘⇧C', onClick: handleCopy },
     { id: 'delete', icon: <Trash2 size={ICON_SIZE} />, label: 'Delete All', description: 'Remove all feedbacks', shortcut: '⌘⇧⌫', onClick: handleDeleteAll, hoverColor: '#ef4444' },
@@ -320,7 +361,7 @@ export function GoSnap({
     <PortalContext.Provider value={container}>
       {createPortal(toolbar, container)}
       {active && !pending.pendingFeedback && !pending.pendingAreaFeedback && (
-        <SmartInspectorOverlay hoveredElement={hoveredElement} dragArea={dragArea} theme={theme} zIndex={zIndex} accentColor={accentColor} />
+        <SmartInspectorOverlay hoveredElement={hoveredElement} dragArea={dragArea} theme={theme} zIndex={zIndex} accentColor={accentColor} inspectMode={inspectMode} />
       )}
       {pending.pendingFeedback && (
         <FeedbackPopover
