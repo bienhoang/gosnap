@@ -1,4 +1,5 @@
-import type { FeedbackItem, InspectedElement } from '../types'
+import type { FeedbackItem, InspectedElement, ComponentInfo } from '../types'
+import { detectReact } from './react-fiber'
 import { isMultiSelect } from './feedback-helpers'
 
 type FormatMode = 'detailed' | 'debug'
@@ -80,16 +81,68 @@ function getContextText(elements: InspectedElement[]): string {
 }
 
 // =============================================================================
+// COMPONENT INFO HELPERS
+// =============================================================================
+
+/** Get framework info line for output header */
+function getFrameworkLine(): string | null {
+  try {
+    const detection = detectReact()
+    if (!detection.detected) return null
+    const mode = detection.isDev ? 'development' : 'production'
+    return detection.version
+      ? `**Framework:** React ${detection.version} (${mode})`
+      : `**Framework:** React (${mode})`
+  } catch {
+    return null
+  }
+}
+
+/** Format component info lines for a feedback item */
+function formatComponentLines(info: ComponentInfo, mode: FormatMode, lines: string[]): void {
+  if (info.treePath.length > 0) {
+    lines.push(`**Component Tree:** ${info.treePath.join(' > ')}`)
+  }
+
+  if (info.source) {
+    const file = info.source.fileName.replace(/^(\.\/|\/app\/|\/src\/)/, '')
+    lines.push(`**Source:** ${file}:${info.source.lineNumber}`)
+  }
+
+  const propEntries = Object.entries(info.props)
+  if (propEntries.length > 0) {
+    if (mode === 'debug') {
+      lines.push(`**Props:**`)
+      for (const [key, value] of propEntries) {
+        lines.push(`  - ${key}: ${value}`)
+      }
+    } else {
+      const shown = propEntries.slice(0, 5)
+      const propsStr = shown.map(([k, v]) => `${k}: ${v}`).join(', ')
+      const suffix = propEntries.length > 5 ? `, +${propEntries.length - 5} more` : ''
+      lines.push(`**Props:** { ${propsStr}${suffix} }`)
+    }
+  }
+}
+
+// =============================================================================
 // UNIFIED FORMATTERS
 // =============================================================================
 
 /** Format a single-element feedback for either mode */
 function formatSingle(fb: FeedbackItem, mode: FormatMode, lines: string[]): void {
   const m = fb.element?.metadata
+  const ci = fb.element?.componentInfo
   const bb = m?.boundingBox
-  const desc = m?.elementDescription ?? fb.selector
 
-  lines.push(`### ${fb.stepNumber}. ${desc}`)
+  // Header: prefer component name over element description
+  if (ci) {
+    const source = ci.source ? ` — ${ci.source.fileName.split('/').pop()}:${ci.source.lineNumber}` : ''
+    lines.push(`### ${fb.stepNumber}. <${ci.name} />${source}`)
+  } else {
+    const desc = m?.elementDescription ?? fb.selector
+    lines.push(`### ${fb.stepNumber}. ${desc}`)
+  }
 
   if (fb.orphan) {
     if (mode === 'detailed') {
@@ -101,6 +154,11 @@ function formatSingle(fb: FeedbackItem, mode: FormatMode, lines: string[]): void
     }
     lines.push(`**Feedback:** ${fb.content}`)
     return
+  }
+
+  // Component info section (when available)
+  if (ci) {
+    formatComponentLines(ci, mode, lines)
   }
 
   if (mode === 'detailed') {
@@ -190,6 +248,8 @@ export function formatDetailed(feedbacks: FeedbackItem[]): string {
 
   lines.push(`## Page Feedback: ${pathname}`)
   lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
+  const frameworkLine = getFrameworkLine()
+  if (frameworkLine) lines.push(frameworkLine)
 
   const sorted = [...feedbacks].sort((a, b) => a.stepNumber - b.stepNumber)
 
@@ -207,6 +267,8 @@ export function formatDetailedSingle(fb: FeedbackItem): string {
 
   lines.push(`## Page: ${window.location.pathname}`)
   lines.push(`**Viewport:** ${window.innerWidth}×${window.innerHeight}`)
+  const frameworkLine = getFrameworkLine()
+  if (frameworkLine) lines.push(frameworkLine)
   lines.push('')
 
   formatFeedback(fb, 'detailed', lines)
@@ -231,6 +293,11 @@ export function formatDebug(feedbacks: FeedbackItem[]): string {
   lines.push(`- User Agent: ${env.userAgent}`)
   lines.push(`- Timestamp: ${env.timestamp}`)
   lines.push(`- Device Pixel Ratio: ${env.dpr}`)
+  const detection = detectReact()
+  if (detection.detected) {
+    const mode = detection.isDev ? 'development' : 'production'
+    lines.push(`- Framework: React ${detection.version ?? 'unknown'} (${mode})`)
+  }
   lines.push('')
   lines.push('---')
 
@@ -256,6 +323,11 @@ export function formatDebugSingle(fb: FeedbackItem): string {
   lines.push(`- URL: ${env.url}`)
   lines.push(`- Timestamp: ${env.timestamp}`)
   lines.push(`- Device Pixel Ratio: ${env.dpr}`)
+  const detection = detectReact()
+  if (detection.detected) {
+    const mode = detection.isDev ? 'development' : 'production'
+    lines.push(`- Framework: React ${detection.version ?? 'unknown'} (${mode})`)
+  }
   lines.push('')
 
   formatFeedback(fb, 'debug', lines)

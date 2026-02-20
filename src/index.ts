@@ -12,6 +12,10 @@ export type {
   AreaData,
   AreaBounds,
   InspectAreaEvent,
+  // Component X-Ray types
+  InspectMode,
+  ComponentInfo,
+  ReactDetection,
   // Sync types
   SyncConfig,
   SyncMode,

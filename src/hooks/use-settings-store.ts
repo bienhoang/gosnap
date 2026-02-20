@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { ToolbarTheme } from '../types'
+import type { ToolbarTheme, InspectMode } from '../types'
 
 const SETTINGS_KEY = 'pro-ui-settings'
 
@@ -18,6 +18,7 @@ interface PersistedSettings {
   theme?: ToolbarTheme
   outputMode?: OutputMode
   markerColor?: string
+  inspectMode?: InspectMode
 }
 
 function loadSettings(): PersistedSettings {
@@ -40,19 +41,20 @@ function saveSettings(settings: PersistedSettings): void {
 
 export function useSettingsStore(defaultTheme: ToolbarTheme) {
   // Load persisted settings once on mount (not 3 separate JSON.parse calls)
-  const [{ theme, outputMode, markerColor }, setAll] = useState(() => {
+  const [{ theme, outputMode, markerColor, inspectMode }, setAll] = useState(() => {
     const saved = loadSettings()
     return {
       theme: saved.theme ?? defaultTheme,
       outputMode: saved.outputMode ?? ('detailed' as OutputMode),
       markerColor: saved.markerColor ?? MARKER_COLORS[0].value,
+      inspectMode: (saved.inspectMode ?? 'dom') as InspectMode,
     }
   })
 
   // Persist on change
   useEffect(() => {
-    saveSettings({ theme, outputMode, markerColor })
-  }, [theme, outputMode, markerColor])
+    saveSettings({ theme, outputMode, markerColor, inspectMode })
+  }, [theme, outputMode, markerColor, inspectMode])
 
   const setTheme = useCallback((t: ToolbarTheme) => {
     setAll(prev => ({ ...prev, theme: t }))
@@ -70,6 +72,14 @@ export function useSettingsStore(defaultTheme: ToolbarTheme) {
     setAll(prev => ({ ...prev, markerColor: color }))
   }, [])
 
+  const setInspectMode = useCallback((mode: InspectMode) => {
+    setAll(prev => ({ ...prev, inspectMode: mode }))
+  }, [])
+
+  const toggleInspectMode = useCallback(() => {
+    setAll(prev => ({ ...prev, inspectMode: prev.inspectMode === 'dom' ? 'component' : 'dom' }))
+  }, [])
+
   return {
     theme,
     setTheme,
@@ -78,5 +88,8 @@ export function useSettingsStore(defaultTheme: ToolbarTheme) {
     setOutputMode,
     markerColor,
     setMarkerColor,
+    inspectMode,
+    setInspectMode,
+    toggleInspectMode,
   }
 }

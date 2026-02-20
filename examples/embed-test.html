@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoSnap — Embed Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; line-height: 1.6; background: #f5f5f5; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    h2 { margin-top: 30px; color: #333; }
+    .card { background: #fff; padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid #e5e5e5; }
+    .card-dark { background: #1a1a1a; color: #e5e5e5; border-color: #333; }
+    .status { padding: 12px; border-radius: 6px; margin: 15px 0; font-family: monospace; font-size: 13px; }
+    .status-success { background: #d4edda; color: #155724; }
+    .status-error { background: #f8d7da; color: #721c24; }
+    .test-section { border: 1px solid #e5e5e5; padding: 20px; border-radius: 10px; margin: 20px 0; background: #fff; }
+    button { padding: 8px 16px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; margin-right: 8px; background: #fff; }
+    button:hover { background: #f0f0f0; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+    pre { background: #f5f5f5; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+    .events-log { max-height: 150px; overflow-y: auto; background: #1a1a1a; color: #4ade80; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; }
+    .interactive-box { display: inline-block; padding: 15px 25px; background: #3b82f6; color: white; border-radius: 8px; margin: 5px; cursor: pointer; }
+    .interactive-box:hover { background: #2563eb; }
+  </style>
+</head>
+
+<body>
+  <h1>GoSnap — Embed Test</h1>
+  <p>Test page for the self-contained embed bundle — Web Component and Imperative API.</p>
+
+  <!-- Load Status -->
+  <div id="load-status" class="status">Loading script...</div>
+
+  <!-- Test 1: Web Component -->
+  <div class="test-section">
+    <h2>Test 1: Web Component API</h2>
+    <p>Using <code>&lt;go-snap&gt;</code> custom element:</p>
+    <pre>&lt;go-snap position="bottom-right" theme="dark" persist&gt;&lt;/go-snap&gt;</pre>
+
+    <div class="card">
+      <h3>Sample UI Elements</h3>
+      <p>Try hovering and clicking these elements with the inspector active:</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+        <div class="interactive-box">Button A</div>
+        <div class="interactive-box" style="background: #10b981;">Button B</div>
+        <div class="interactive-box" style="background: #f59e0b;">Button C</div>
+      </div>
+    </div>
+
+    <h4>Events Log:</h4>
+    <div id="events-log" class="events-log">Waiting for events...</div>
+  </div>
+
+  <!-- Test 2: Imperative API -->
+  <div class="test-section">
+    <h2>Test 2: Imperative API</h2>
+    <p>Using <code>GoSnap.init()</code>:</p>
+    <pre>const widget = GoSnap.init({
+  position: 'bottom-left',
+  theme: 'light'
+});
+
+// Later: widget.destroy();</pre>
+
+    <button id="btn-init">Initialize Widget</button>
+    <button id="btn-destroy" disabled>Destroy Widget</button>
+    <div id="imperative-status" class="status" style="display: none;"></div>
+  </div>
+
+  <!-- Test 3: Content to inspect -->
+  <div class="test-section">
+    <h2>Test 3: Content to Inspect</h2>
+    <div class="card card-dark">
+      <h3>Dark Card</h3>
+      <p>This is a dark themed card for testing contrast and element capture.</p>
+      <button style="background: #374151; color: white; border-color: #4b5563;">Dark Button</button>
+    </div>
+
+    <div class="card">
+      <h3>Form Elements</h3>
+      <input type="text" placeholder="Text input" style="padding: 8px; margin-right: 10px; border-radius: 4px; border: 1px solid #ddd;">
+      <select style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+        <option>Select option</option>
+        <option>Option A</option>
+        <option>Option B</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Web Component (declarative) -->
+  <go-snap position="bottom-right" theme="dark" persist="embed-test"></go-snap>
+
+  <!-- Load the embed script -->
+  <script src="../dist/embed.global.js"></script>
+  <script>
+    const loadStatus = document.getElementById('load-status');
+    const eventsLog = document.getElementById('events-log');
+    const btnInit = document.getElementById('btn-init');
+    const btnDestroy = document.getElementById('btn-destroy');
+    const imperativeStatus = document.getElementById('imperative-status');
+
+    let widget = null;
+    let logLines = [];
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logLines.unshift(`[${time}] ${msg}`);
+      if (logLines.length > 20) logLines.pop();
+      eventsLog.textContent = logLines.join('\n');
+    }
+
+    // Check script loaded
+    if (typeof GoSnap !== 'undefined') {
+      const exports = Object.keys(GoSnap);
+      loadStatus.className = 'status status-success';
+      loadStatus.innerHTML = `<strong>✓ Script loaded!</strong> Exports: ${exports.join(', ')}`;
+      log('GoSnap loaded successfully');
+
+      if (customElements.get('go-snap')) {
+        log('Custom element <go-snap> registered');
+      }
+    } else {
+      loadStatus.className = 'status status-error';
+      loadStatus.innerHTML = '<strong>✗ Failed!</strong> GoSnap not found on window.';
+    }
+
+    // Listen for events from Web Component
+    const webComponent = document.querySelector('go-snap');
+    if (webComponent) {
+      webComponent.addEventListener('toggle', (e) => log(`toggle: active=${e.detail.active}`));
+      webComponent.addEventListener('inspect', (e) => log(`inspect: ${e.detail.element?.selector || 'null'}`));
+      webComponent.addEventListener('feedback-submit', (e) => log(`feedback-submit: "${e.detail.feedback?.content}"`));
+      webComponent.addEventListener('feedback-delete', (e) => log(`feedback-delete: ${e.detail.feedbackId}`));
+      webComponent.addEventListener('copy', () => log('copy: feedbacks copied'));
+      log('Event listeners attached to <go-snap>');
+    }
+
+    // Imperative API buttons
+    btnInit.addEventListener('click', () => {
+      if (widget) return;
+      try {
+        widget = GoSnap.init({
+          position: 'bottom-left',
+          theme: 'light',
+          persist: 'embed-test-imperative'
+        });
+        btnInit.disabled = true;
+        btnDestroy.disabled = false;
+        imperativeStatus.style.display = 'block';
+        imperativeStatus.className = 'status status-success';
+        imperativeStatus.textContent = '✓ Widget initialized at bottom-left with light theme';
+        log('Imperative widget created (bottom-left, light theme)');
+      } catch (err) {
+        imperativeStatus.style.display = 'block';
+        imperativeStatus.className = 'status status-error';
+        imperativeStatus.textContent = `✗ Error: ${err.message}`;
+        log(`Error: ${err.message}`);
+      }
+    });
+
+    btnDestroy.addEventListener('click', () => {
+      if (!widget) return;
+      widget.destroy();
+      widget = null;
+      btnInit.disabled = false;
+      btnDestroy.disabled = true;
+      imperativeStatus.textContent = '✓ Widget destroyed';
+      log('Imperative widget destroyed');
+    });
+  </script>
+</body>
+
+</html>

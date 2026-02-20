@@ -66,6 +66,42 @@ export function getInspectorTooltipDimStyle(theme: ToolbarTheme): CSSProperties 
   }
 }
 
+/** Component mode: dashed highlight around component boundary */
+export function getComponentHighlightStyle(rect: DOMRect, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    position: 'fixed',
+    top: rect.top,
+    left: rect.left,
+    width: rect.width,
+    height: rect.height,
+    border: `2px dashed ${accentColor}`,
+    backgroundColor: hexToRgba(accentColor, 0.05),
+    borderRadius: 4,
+    pointerEvents: 'none',
+    transition: 'all 80ms ease-out',
+  }
+}
+
+/** Component tooltip: component name style */
+export function getComponentTooltipNameStyle(accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
+  return {
+    color: accentColor,
+    fontWeight: 700,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  }
+}
+
+/** Component tooltip: source path style */
+export function getComponentTooltipSourceStyle(theme: ToolbarTheme): CSSProperties {
+  return {
+    fontSize: 10,
+    color: theme === 'dark' ? '#94a3b8' : '#64748b',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  }
+}
+
 export function getDragSelectionRectStyle(x: number, y: number, w: number, h: number, accentColor = DEFAULT_ACCENT_COLOR): CSSProperties {
   return {
     position: 'absolute',
