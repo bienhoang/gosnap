@@ -33,7 +33,10 @@ const MAX_BOUNDARY_NODES = 100
 export function getReactFiber(element: HTMLElement): FiberNode | null {
   try {
     const key = Object.keys(element).find(
-      (k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'),
+      (k) =>
+        k.startsWith('__reactFiber$') ||
+        k.startsWith('__reactInternalInstance$') ||
+        k.startsWith('__reactContainer$'),
     )
     return key ? (element as unknown as Record<string, FiberNode>)[key] : null
   } catch {
@@ -270,14 +273,39 @@ export function detectReact(): ReactDetection {
       return cachedDetection
     }
 
-    // Fallback: check for fiber keys on DOM elements
-    const rootEl = document.getElementById('root') || document.getElementById('__next')
-    if (rootEl) {
-      const fiber = getReactFiber(rootEl)
-      if (fiber) {
-        cachedDetection = { detected: true, isDev: !!fiber._debugSource }
-        return cachedDetection
+    // Fallback: check for fiber keys on common root elements
+    const fallbackCandidates = [
+      document.getElementById('root'),
+      document.getElementById('__next'),
+      document.querySelector('[data-reactroot]'),
+    ].filter(Boolean) as HTMLElement[]
+
+    // Scan arbitrary DOM elements if no common roots found
+    if (fallbackCandidates.length === 0) {
+      const all = document.querySelectorAll('*')
+      for (let i = 0; i < Math.min(all.length, 100); i++) {
+        const fiber = getReactFiber(all[i] as HTMLElement)
+        if (fiber) {
+          fallbackCandidates.push(all[i] as HTMLElement)
+          break
+        }
       }
+    }
+
+    for (const el of fallbackCandidates) {
+      const fiber = getReactFiber(el)
+      if (!fiber) continue
+
+      // Check dev mode
+      let isDev = false
+      let current: FiberNode | null = fiber
+      for (let i = 0; i < 10 && current; i++) {
+        if (current._debugSource) { isDev = true; break }
+        current = current.child || current.return
+      }
+
+      cachedDetection = { detected: true, isDev }
+      return cachedDetection
     }
 
     cachedDetection = { detected: false }
